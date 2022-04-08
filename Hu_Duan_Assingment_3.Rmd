@@ -47,7 +47,7 @@ Chester_L <-
   Chester_L %>%
   mutate(CHNG_URB = URBAN01 - URBAN92) 
 
-#Select out the negative numbers, which indicates that the urban land use  in 1992 has changed to other use in 2021. 
+#Negative indicates that the urban land use  in 1992 has changed to other use in 2021. Replace them with 0.
 Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
 
 ```
@@ -55,6 +55,17 @@ Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
 ## 3. Build Binomial Model 
 
 ```{r}
+head(Chester_L)
+
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD
+, family = binomial, data = Chester_L)
+
+#Backward Selection
+step( glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD+DIST_WATER
++ DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L), direction="backward")
+
+summary(bi_model)
 
 ```
 
