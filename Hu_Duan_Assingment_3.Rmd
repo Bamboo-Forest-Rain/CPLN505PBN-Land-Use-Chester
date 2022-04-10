@@ -1,17 +1,25 @@
 ---
 title: "CPLN505-Assignment 3"
-author: "Yihong Hu"
+author: "Yihong Hu & Anna Duan"
 date: "4/7/2022"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(ggplot2)
-library(stargazer)
-library(sf)
+library(tidyverse) # data processing and plotting package
+library(sf) # standard R spatial package
 library(kableExtra)
+library(gmodels)
+library(ggcorrplot)
+library(gganimate)
+library(gifski)
+library(caret)
+library(RSocrata)
+library(FNN)
+library(car)
+library(DescTools)
+library(LogisticDx)
 ```
 
 # Introduction
@@ -41,6 +49,8 @@ summary(Chester_Numeric) %>% kable() %>% kable_styling(bootstrap_options = "stri
 
 ## 2. Binary Variables
 
+A column indicating land that has changed to urban land between 1992 to 2001 is created.
+
 ```{r Binary}
 #Find urban land use change between 1992 and 2001
 Chester_L <-
@@ -54,19 +64,316 @@ Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
 
 ## 3. Build Binomial Model 
 
-```{r}
+First, the dataset needs cleaning. There are some zeros in columns with continuous values, these should be changed to NA so the regression can bypass them.  
+
+```{r Clearning Dataset}
+
+Chester_L_clean <- Chester_L %>%
+  select(DIST_WATER,DIST_RAILS, DIST_REGRA, DIST_PASSR, DIST_4LNE_, DIST_INTER, DIST_PARKS)
+
+is.na(Chester_L_clean) <- !Chester_L_clean
+
+Chester_Clean_2 <- Chester_L %>%
+  select(-DIST_WATER,-DIST_RAILS, -DIST_REGRA, -DIST_PASSR, -DIST_4LNE_, -DIST_INTER, -DIST_PARKS)
+
+Chester_L_Final <-
+  cbind(Chester_L_clean, Chester_Clean_2)
+
 head(Chester_L)
 
 bi_model <-
-  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD
-, family = binomial, data = Chester_L)
-
-#Backward Selection
-step( glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD+DIST_WATER
-+ DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L), direction="backward")
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L_Final)
 
 summary(bi_model)
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The AIC is shown to be 1451 with very few significant variables. A backward and forward selection methods are used to give a list of the most related variables. Some valuables returned NA in the model, which means they are co-linear with other variables. These variables should be removed. 
+
+```{r}
+#Remove "Park", "Water", "College" variables in the regression.
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model)
+```
+The variance inflation factors (VIF) is calculated to test the co-linearity of the variables. 
+
+```{r}
+vif(bi_model)
+```
+
+A general rule of thumb is when a variable's VIF is greater than 5, the variable cannot be used in the regression. DIST_RAILS, DIST_REGRA, DIST_INTER should be removed from the set. 
+
+```{r new model}
+
+bi_model2 <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model2)
+
+```
+Backward and Forward selections are used to select variables that will give the best results.
+
+```{r}
+#Backward Selection
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final)), direction = "backward")
+
+#Forward Selection
+fullmod<-glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+intonly<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_L_Final))
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+
+```
+
+The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so the observations are less. 
+
+```{r new model 2}
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + RAILSTN100 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+
+#Delete the insignificant variable RAILSTN100
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+```
+
+## Test the fitness of model
+
+From the above model summary, we know that the degree freedom is 5493. ChiSq method to determine the fitness
+
+```{r Chisq}
+qchisq(.95, df=5493) 
+```
+
+The critical value is 5666.533. The null deviance value of the model (1763.5) is much lower than the critical value, meaning our predicted results will have no significant difference from the observations.
+
+```{r test for fiteness}
+PseudoR2(
+  bi_model3, 
+  which = c("McFadden", "CoxSnell", "Nagelkerke", "Tjur")
+)
+model3_fitness <- gof(bi_model3, plotROC = FALSE)
+
+model3_fitness$gof5
+```
+
+4. Model Results and Fitness
+
+```{r}
+exp(coef(bi_model3))
+100 * (exp(coef(bi_model3))-1)
+```
+
+Several goodness of fit tests, suggest that the model's predicted results are in the reasonable range similar to that of the original data. 
+
+According to the model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location is within 300 meters of a SPETA regional rail line, 2) if the location is within 1,000 meters of a city or boro, 3) the location's percent of households living below poverty line in 1990, and 4) the location's percent of white households. These three factors have the largest impact on the possibility of a location being urbanized. 
+
+Every percentage increase in households living below poverty line is associated with a 8% decrease in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
+
+In the same way, for every percent of increase in white population, there is a 3% decrease in chance of successfully being urbanized.
+
+If a location is within the 300 meters of a SPETA regional railway, it will have 159% increase in the chance of being urbanized comparing to those that are outside of the range. 
+
+If a location is within 1000 meters of another city or boro, the chance of being urbanized is increased by 128%. 
+
+## Model Improvement
+
+The statistic summary showed that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
+
+```{r distribution}
+Chester_Numeric %>%
+  gather(Variable, Value) %>%
+  ggplot(aes(Value)) + 
+    geom_histogram(bins = 30, color="blue", fill="blue", alpha=0.2) + 
+    facet_wrap(~Variable, scales = 'free')+
+    labs(title = "Distribution of Variables") + ylab("Count")  +
+  theme(panel.background = element_rect(colour = "grey50", size=3))
+
+```
+
+Most of the data are skewed. A log transformation should be applied to readjust the distribution for the skewed variable.
+
+```{r log transform}
+str(Chester_Numeric)
+
+REGRAIL300 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER
+
+Chester_log <-
+  Chester_L%>%
+  mutate(log_POV = log(PCT_POV_90),
+         log_POPDEN = log(POPDEN90),
+         log_WATER = log(DIST_WATER),
+         log_WHITE = log(PCT_WHITE_),
+         log_PARK = log(DIST_PARKS),
+         log_SF = log(PCT_SFHOME),
+         log_PASSR = log(DIST_PASSR),
+         log_DIST4 = log(DIST_4LNE_),
+         log_MEDHOUSE = log(MEDHSEVAL_),
+         log_RAILS = log(DIST_RAILS),
+         log_REGRA = log(DIST_REGRA),
+         log_INTER = log(DIST_INTER),
+         log_HSB = log(PCT_HSB_19),
+         log_COLGRD = log(PCT_COLGRD),
+         log_SLOPE = log(SLOPE),
+         log_MEDINC = log(MEDINC90))
+```
+
+```{r log model}
+
+head(Chester_log)
+
+#Replace log infinite with NA
+Chester_log <- do.call(data.frame,                      
+               lapply(Chester_log,
+              function(x) replace(x, is.infinite(x), NA)))
+
+#Model
+bi_model_log <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+log_POPDEN + log_MEDHOUSE + log_WHITE + log_SF + log_POV  + 
+log_PASSR + log_DIST4 + log_PARK + log_WATER + log_RAILS + log_REGRA +log_INTER + log_HSB + log_COLGRD + log_SLOPE + log_MEDINC , family = binomial, data = na.omit(Chester_log))
+
+summary(bi_model_log)
+
+```
+Just by log transforming, even without variable selection, the model has a reduced AIC by 200. 
+
+```{r log Variable Selection}
+#Backward Selection Log
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + log_POPDEN + log_MEDHOUSE + log_WHITE + log_SF + log_POV  + log_PASSR + log_DIST4 + log_PARK + log_WATER + log_RAILS + log_REGRA +log_INTER + log_HSB + log_SLOPE + log_MEDINC , family = binomial, data = na.omit(Chester_log)))
+
+#Forward Selection log
+fullmod2<-glm(CHNG_URB~FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + log_POPDEN + log_MEDHOUSE + log_WHITE + log_SF + log_POV  + log_PASSR + log_DIST4 + log_PARK + log_WATER + log_RAILS + log_REGRA +log_INTER + log_HSB + log_SLOPE + log_MEDINC , family = binomial, data = na.omit(Chester_log))
+
+intonly2<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_log))
+
+step(intonly2, scope=list(lower=intonly2, upper=fullmod2), direction="forward")
+```
+
+```{r model with selected variables}
+
+bi_model_log2 <- glm(formula = CHNG_URB ~ FOURLNE300 + CITBORO_10 + log_POPDEN +  log_MEDHOUSE + log_WHITE + log_POV + log_PASSR + log_DIST4 + log_RAILS + log_SLOPE + log_MEDINC, family = binomial, data = na.omit(Chester_log))
+
+summary(bi_model_log2)
+
+bi_model_log3 <- glm(formula = CHNG_URB ~ + CITBORO_10 + log_POPDEN +  log_MEDHOUSE + log_WHITE + log_POV + log_PASSR + log_DIST4 + log_RAILS + log_SLOPE + log_MEDINC, family = binomial, data = na.omit(Chester_log))
+
+summary(bi_model_log3)
+
+```
+# Plots and Tables
+
+```{r poverty}
+
+#Holding everything else constant, but percent poverty 
+
+## 1 in both REGRAIL300 and CITBORO_10
+POV_possibility <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+POV_possibility <-
+  POV_possibility %>%
+  mutate(predict_result = predict(bi_model3,POV_possibility,type = "response"))
+
+## 0 in both REGRAIL300 and CITBORO_10
+POV_possibility2 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 0, CITBORO_10 = 0,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+POV_possibility2 <-
+  POV_possibility2 %>%
+  mutate(predict_result = predict(bi_model3,POV_possibility2,type = "response"))
+
+## REGRAIL300 = 0 and CITBORO_10 = 1
+POV_possibility3 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 0, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_, na.rm = TRUE), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+POV_possibility3 <-
+  POV_possibility3 %>%
+  mutate(predict_result = predict(bi_model3,POV_possibility3,type = "response"))
+
+## REGRAIL300= 1 and CITBORO_10 = 0
+POV_possibility4 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 0,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_),PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+POV_possibility4 <-
+  POV_possibility4 %>%
+  mutate(predict_result = predict(bi_model3,POV_possibility4,type = "response"))
+
+#Combing the results in a new data frame
+POV_PRE <- data.frame(PCT_POV = POV_possibility$PCT_POV_90, PRED_REGandCITY_Both1 = POV_possibility$predict_result, PRED_REGandCITY_Both0 = POV_possibility2$predict_result, PRED_REG0_CITY1 = POV_possibility3$predict_result, PRED_REG1_CITY0 = POV_possibility4$predict_result)
+
+#Arrange the data by scenario
+dat <- gather(POV_PRE, -PCT_POV, key = "Scenario", value = "value")
+
+#Plot the data 
+ggplot(dat, aes(x = PCT_POV, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,0.2) +
+        xlab("% Households living below poverty in 1990") + ylab("Predicted Probability of Urbanization") + theme_light()
+```
+
+While holding every other variable constant (with their mean values), the graph above shows the predicting results when changing factor whether the location is within 300 meter of a SPETA railway and within 1000 meters of a city or boro. 
+
+The purple curve denotes the probability when the location is both within 300 meters of a SPETA regional railway and 1,000 meters of a city or boro. 
+
+The green curve denotes the probability when the location is within 300 meters of a SEPTA railway, but *not* within 1,000 meters of a city or boro.
+
+The red curve denotes the probability when the location is within 1,000 meters if a city or boro, but *not* within 300 meters of a SEPTA railway.
+
+The blue curve denotes the probability when the location is both *not* within 300 meters of a SEPTA railway and within 1,000 meters if a city or boro. 
+
+All the curves are plotted against the change in percent of households living below the poverty line in 1990. 
+
+The graph above shows that when the location is both within 300 meters of a regional SEPTA railway and 1,000 meters of a city or boro, the likelihood of it being urbanized comparing to non-change is much higher. 
+The green curve is higher than the red curve in the graph. This shows that whether the location is within 300 meters of SPETA regional railway is a stronger predictor than whether the location is within 1000 meters of a city or boro. 
+
+The graph also shows as the percent households increases, the predicted probably of urbanization decreases as well. 
+
+```{r PCT_WHITE}
+#Probability when percent of white population is the mean value
+WHI_possibility <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+#Probability when percent of white population is 25
+WHI_possibility2 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = 25, PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+#Probability when percent of white population is 75
+WHI_possibility3 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = 75, PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+
+#Gather predicted probability in a new data frame
+WHT_PRE<- data.frame(matrix(ncol = 4, nrow = nrow(Chester_L_Final)))
+WHT_PRE$POV <- Chester_L_Final$PCT_POV_90
+WHT_PRE$PRED_WHT_MEAN<- predict(bi_model3, WHI_possibility, type="response")
+WHT_PRE$PRED_WHT_25<- predict(bi_model3, WHI_possibility2, type="response")
+WHT_PRE$PRED_WHT_75<- predict(bi_model3, WHI_possibility3, type="response")
+
+#Arrange data by scenario
+dat2 <- gather(WHT_PRE, -POV, key = "Scenario", value = "value") %>% na.omit()
+
+#plot the data
+ggplot(dat2, aes(x = POV, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+        xlab("% Households living below poverty in 1990") + ylab("Predicted Probability of Urbanization") +  theme_light()
+
+```
+
+The above graph shows the predicted probability of urbanization at different percentages of white population in 1990 against percent households living below the poverty line in 1990.
+
+When the location is both within 300 meters of a SPETA railway and 1000 meters of a city or boro, and other variables held constant (with their mean values), the percent of white population in a location shows an huge effect on the predicted probability of urbanization. 
+
+The red line denotes the probability at 25% of white population in the area against percent households in poverty.
+
+The green line denotes the probability at 75% of white population in the area against percent households in poverty.
+
+The blue line denotes the probability at 94% of white population (the mean percentage of white population in Chester County) in the area against percent households in poverty.
+
+In Chester County, those areas that lived with less white population in 1990 had higher chance of being urbanized in 2001 based on the graph. 
+
+
+
+
+
