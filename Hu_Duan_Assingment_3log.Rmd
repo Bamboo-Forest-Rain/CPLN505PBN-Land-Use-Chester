@@ -309,45 +309,41 @@ Some additional newer data could be gathered, such as the population density, ho
 # Plots and Tables
 
 ```{r poverty}
+
 #Holding everything else constant, but percent poverty 
+summary(Chester_L)
+## 1 in CITBORO_10
+WHITE_possibility <- data.frame(log_WHITE = Chester_L_Fin$PCT_WHITE_, CITBORO_10 = 1,log_POPDEN = Chester_L_Final$POPDEN90, log_MEDHOUSE = Chester_L_Final$MEDHSEVAL_, log_POV = Chester_L_Final$PCT_POV_90, log_PASSR = Chester_L_Final$DIST_PASSR, log_DIST4 = Chester_L_Final$DIST_4LNE_ , log_RAILS = Chester_L_Final$DIST_RAILS, log_SLOPE = Chester_L_Final$SLOPE, log_MEDINC = Chester_L_Final$MEDINC90)
 
-## 1 in both REGRAIL300 and CITBORO_10
-POV_possibility <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+WHITE_possibility <-
+  WHITE_possibility %>%
+  mutate(predict_result = predict(bi_model_log3,WHITE_possibility,type = "response"))
 
-POV_possibility <-
-  POV_possibility %>%
-  mutate(predict_result = predict(bi_model3,POV_possibility,type = "response"))
+summary(Chester_log)
+## 0 in CITBORO_10
+WHITE_possibility2 <- data.frame(log_WHITE = Chester_L_Final$PCT_WHITE_, CITBORO_10 = 0,log_POPDEN = 1, log_MEDHOUSE = mean(Chester_L_Final$MEDHSEVAL_,na.rm = TRUE), log_POV = mean(Chester_L_Final$PCT_POV_90,na.rm=TRUE), log_PASSR = mean(Chester_L_Final$DIST_PASSR,na.rm=TRUE), log_DIST4 = mean(Chester_L_Final$DIST_4LNE_ , na.rm = TRUE), log_RAILS = mean(Chester_L_Final$DIST_RAILS,na.rm = TRUE), log_SLOPE = mean(Chester_L_Final$SLOPE,na.rm = TRUE), log_MEDINC = mean(Chester_L_Final$MEDINC90,na.rm = TRUE))
 
-## 0 in both REGRAIL300 and CITBORO_10
-POV_possibility2 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 0, CITBORO_10 = 0,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
+WHITE_possibility2 <-
+  WHITE_possibility2 %>%
+  mutate(predict_result = predict(bi_model_log3,WHITE_possibility2,type = "response"))
 
-POV_possibility2 <-
-  POV_possibility2 %>%
-  mutate(predict_result = predict(bi_model3,POV_possibility2,type = "response"))
+## 0 in CITBORO_10
+WHITE_possibility2 <- data.frame(log_WHITE = Chester_L_Final$PCT_WHITE_, CITBORO_10 = 0,log_POPDEN = 1, log_MEDHOUSE = mean(Chester_L_Final$MEDHSEVAL_,na.rm = TRUE), log_POV = mean(Chester_L_Final$PCT_POV_90,na.rm=TRUE), log_PASSR = mean(Chester_L_Final$DIST_PASSR,na.rm=TRUE), log_DIST4 = mean(Chester_L_Final$DIST_4LNE_ , na.rm = TRUE), log_RAILS = mean(Chester_L_Final$DIST_RAILS,na.rm = TRUE), log_SLOPE = mean(Chester_L_Final$SLOPE,na.rm = TRUE), log_MEDINC = mean(Chester_L_Final$MEDINC90,na.rm = TRUE))
 
-## REGRAIL300 = 0 and CITBORO_10 = 1
-POV_possibility3 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 0, CITBORO_10 = 1,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_), PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_, na.rm = TRUE), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
-
-POV_possibility3 <-
-  POV_possibility3 %>%
-  mutate(predict_result = predict(bi_model3,POV_possibility3,type = "response"))
-
-## REGRAIL300= 1 and CITBORO_10 = 0
-POV_possibility4 <- data.frame(PCT_POV_90 = Chester_L_Final$PCT_POV_90, REGRAIL300 = 1, CITBORO_10 = 0,POPDEN90 = mean(Chester_L_Final$POPDEN90), MEDHSEVAL_ = mean(Chester_L_Final$MEDHSEVAL_),PCT_WHITE_ = mean(Chester_L_Final$PCT_WHITE_), PCT_SFHOME = mean(Chester_L_Final$PCT_SFHOME), DIST_PASSR = mean(Chester_L_Final$DIST_PASSR, na.rm = TRUE), DIST_4LNE_ = mean(Chester_L_Final$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_L_Final$DIST_PARKS,na.rm = TRUE), DIST_WATER = mean(Chester_L_Final$DIST_WATER,na.rm = TRUE))
-
-POV_possibility4 <-
-  POV_possibility4 %>%
-  mutate(predict_result = predict(bi_model3,POV_possibility4,type = "response"))
+WHITE_possibility2 <-
+  WHITE_possibility2 %>%
+  mutate(predict_result = predict(bi_model_log3,WHITE_possibility2,type = "response"))
 
 #Combing the results in a new data frame
-POV_PRE <- data.frame(PCT_POV = POV_possibility$PCT_POV_90, PRED_REGandCITY_Both1 = POV_possibility$predict_result, PRED_REGandCITY_Both0 = POV_possibility2$predict_result, PRED_REG0_CITY1 = POV_possibility3$predict_result, PRED_REG1_CITY0 = POV_possibility4$predict_result)
 
+WHITE_PRE <- data.frame(PCT_WHITE = WHITE_possibility$log_WHITE, PRED_CITY_1 = WHITE_possibility$predict_result, PRED_CITY_0 = WHITE_possibility2$predict_result)
+                        
 #Arrange the data by scenario
-dat <- gather(POV_PRE, -PCT_POV, key = "Scenario", value = "value")
-#Plot the data 
+dat <- gather(WHITE_PRE, -PCT_WHITE, key = "Scenario", value = "value")
 
-ggplot(dat, aes(x = PCT_POV, y = value, colour = Scenario)) + 
-        geom_line() + ylim(0,0.2) +
+#Plot the data 
+ggplot(dat, aes(x = PCT_WHITE, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
         xlab("% Households living below poverty in 1990") + ylab("Predicted Probability of Urbanization") + theme_light()
 ```
 
