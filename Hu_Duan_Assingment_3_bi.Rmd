@@ -1,0 +1,412 @@
+---
+title: "CPLN505-Assignment 3"
+author: "Yihong Hu & Anna Duan"
+date: "4/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) # data processing and plotting package
+library(sf) # standard R spatial package
+library(kableExtra)
+library(gmodels)
+library(ggcorrplot)
+library(gganimate)
+library(gifski)
+library(caret)
+library(RSocrata)
+library(FNN)
+library(car)
+library(DescTools)
+library(LogisticDx)
+```
+
+# Introduction
+
+```{r Load Data}
+# Read Chester land use Data and its geometry
+Chester_L <- read.csv("Chester_Urban_Growth.csv") 
+Chester_L_geo <-
+  Chester_L%>%
+  st_as_sf(coords=c("X","Y"),crs = "EPSG:25832")
+
+head(Chester_L)
+```
+
+## 1. Summary Statistics 
+
+```{r Chester Summary Statistics, echo=FALSE}
+#Retrieve Numeric Data
+Chester_Numeric <-
+  Chester_L %>%
+  select_if(~any(. > 1)) %>%
+  select(-X, -Y)
+
+#Summary Statistics in the Table
+summary(Chester_Numeric) %>% kable() %>% kable_styling(bootstrap_options = "striped", full_width = T, position = "left", fixed_thead = T)
+```
+
+## 2. Binary Variables
+
+A column indicating land that has changed to urban land between 1992 to 2001 is created.
+
+```{r Binary}
+#Find urban land use change between 1992 and 2001
+Chester_L <-
+  Chester_L %>%
+  mutate(CHNG_URB = URBAN01 - URBAN92) 
+
+#Negative indicates that the urban land use  in 1992 has changed to other use in 2021. Replace them with 0.
+Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
+
+```
+
+## 3. Build Binomial Model 
+
+First, the dataset needs cleaning. There are some zeros in columns with continuous values, these should be changed to NA so the regression can bypass them.  
+
+```{r Clearning Dataset}
+
+Chester_L_clean <- Chester_L %>%
+  select(DIST_WATER,DIST_RAILS, DIST_REGRA, DIST_PASSR, DIST_4LNE_, DIST_INTER, DIST_PARKS)
+
+is.na(Chester_L_clean) <- !Chester_L_clean
+
+Chester_Clean_2 <- Chester_L %>%
+  select(-DIST_WATER,-DIST_RAILS, -DIST_REGRA, -DIST_PASSR, -DIST_4LNE_, -DIST_INTER, -DIST_PARKS)
+
+Chester_L_Final <-
+  cbind(Chester_L_clean, Chester_Clean_2)
+
+head(Chester_L)
+
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L_Final)
+
+summary(bi_model)
+
+```
+
+The AIC is shown to be 1451 with very few significant variables. A backward and forward selection methods are used to give a list of the most related variables. Some valuables returned NA in the model, which means they are co-linear with other variables. These variables should be removed. 
+
+```{r}
+#Remove "Park", "Water", "College" variables in the regression.
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model)
+```
+
+The variance inflation factors (VIF) is calculated to test the co-linearity of the variables. 
+
+```{r}
+vif(bi_model)
+```
+
+A general rule of thumb is when a variable's VIF is greater than 5, the variable cannot be used in the regression. DIST_RAILS, DIST_REGRA, DIST_INTER should be removed from the set. 
+
+```{r new model}
+
+bi_model2 <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model2)
+
+```
+Backward and Forward selections are used to select variables that will give the best results.
+
+```{r}
+#Backward Selection
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final)), direction = "backward")
+
+#Forward Selection
+fullmod<-glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+intonly<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_L_Final))
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+
+```
+
+The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so the observations are less. 
+
+```{r new model 2}
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + RAILSTN100 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+
+#Delete the insignificant variable RAILSTN100
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+```
+
+## Test the fitness of model
+
+From the above model summary, we know that the degree freedom is 5493. ChiSq method to determine the fitness
+
+```{r Chisq}
+qchisq(.95, df=5493) 
+```
+
+The critical value is 5666.533. The null deviance value of the model (1763.5) is much lower than the critical value, meaning our predicted results will have no significant difference from the observations.
+
+```{r test for fiteness}
+PseudoR2(
+  bi_model3, 
+  which = c("McFadden", "CoxSnell", "Nagelkerke", "Tjur")
+)
+model3_fitness <- gof(bi_model3, plotROC = FALSE)
+
+model3_fitness$gof5
+```
+
+4. Model Results and Fitness
+
+```{r}
+exp(coef(bi_model3))
+100 * (exp(coef(bi_model3))-1)
+```
+
+Several goodness of fit tests, suggest that the model's predicted results are in the reasonable range similar to that of the original data. 
+
+According to the model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location is within 300 meters of a SPETA regional rail line, 2) if the location is within 1,000 meters of a city or boro, 3) the location's percent of households living below poverty line in 1990, and 4) the location's percent of white households. These three factors have the largest impact on the possibility of a location being urbanized. 
+
+Every percentage increase in households living below poverty line is associated with a 8% decrease in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
+
+In the same way, for every percent of increase in white population, there is a 3% decrease in chance of successfully being urbanized.
+
+If a location is within the 300 meters of a SPETA regional railway, it will have 159% increase in the chance of being urbanized comparing to those that are outside of the range. 
+
+If a location is within 1000 meters of another city or boro, the chance of being urbanized is increased by 128%. 
+
+## Model Improvement
+
+The statistic summary showed that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
+
+```{r distribution}
+Chester_Numeric %>%
+  gather(Variable, Value) %>%
+  ggplot(aes(Value)) + 
+    geom_histogram(bins = 30, color="blue", fill="blue", alpha=0.2) + 
+    facet_wrap(~Variable, scales = 'free')+
+    labs(title = "Distribution of Variables") + ylab("Count")  +
+  theme(panel.background = element_rect(colour = "grey50", size=3))
+
+```
+
+Most of the data are highly skewed. In this case, making these variables a binary variable is worth to look into. 
+
+The thresholds for the new binary variables are based on their median value in the dataset. 
+
+```{r log transform}
+str(Chester_Numeric)
+summary(Chester_Numeric)
+
+REGRAIL300 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER
+
+Chester_bi <-
+  Chester_L_Final%>%
+  mutate(bi_POV_less4 = case_when(PCT_POV_90 < 4 ~ 1, TRUE ~ 0),
+         bi_POPDEN_less60 = case_when(POPDEN90 < 60 ~ 1, TRUE ~ 0),
+         bi_WHITE_less97 = case_when(PCT_WHITE_ < 97 ~ 1, TRUE ~ 0),
+         bi_SFHOME = case_when(PCT_SFHOME < 86 ~ 1, TRUE ~ 0))
+```
+
+```{r log model}
+
+head(Chester_log)
+
+#Replace log infinite with NA
+Chester_bi <- do.call(data.frame,                      
+               lapply(Chester_bi,
+              function(x) replace(x, is.infinite(x), NA)))
+
+str(Chester_bi)
+#Model
+bi_model_bi <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi))
+
+summary(bi_model_bi)
+
+```
+
+Just by log transforming, even without variable selection, the model has a reduced AIC by 200. Some of the variables are co-linear which is other, so they should be removed from the final model.
+
+```{r log Variable Selection}
+
+#Backward Selection Log
+
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi)))
+
+#Forward Selection log
+fullmod2<-glm(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi)))
+
+intonly2<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_bi))
+
+step(intonly2, scope=list(lower=intonly2, upper=fullmod2), direction="forward")
+
+CHNG_URB ~ DIST_4LNE_ + DIST_REGRA + bi_POPDEN_less60 + CITBORO_10 + 
+    DIST_PASSR + bi_POV_less4 + bi_WHITE_less97 + bi_SFHOME + 
+    DIST_PARKS + PCT_HSB_19 + SLOPE + REGRAIL300
+
+CHNG_URB ~ REGRAIL300 + CITBORO_10 + bi_POPDEN_less60 + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + 
+  DIST_REGRA + PCT_HSB_19 + SLOPE
+```
+
+The forward and backward selection methods give the same set of the most impact variables for determining probability of urbanization. 
+
+```{r model with selected variables}
+
+bi_model_bi2 <- glm(formula = CHNG_URB ~ DIST_4LNE_ + DIST_REGRA + bi_POPDEN_less60 +  CITBORO_10 + DIST_PASSR + bi_POV_less4 + bi_WHITE_less97 + bi_SFHOME + DIST_PARKS + PCT_HSB_19 + SLOPE + REGRAIL300, family = binomial, data = na.omit(Chester_bi))
+
+summary(bi_model_bi2)
+
+vif(bi_model_bi2)
+```
+The AIC is 1408 of the final model and the VIF is all well below 5, meaning there are no co-linear variables.
+
+```{r goodness of fit log}
+qchisq(.95, df=5493)
+```
+The critical value is 5666.5. The null deviance value of the model (1763) is much lower than the critical value, meaning our predicted results will be in a similar range as the observations. 
+
+*The model with more binary variables is more reliable to predict the results.*
+
+```{r}
+exp(coef(bi_model_bi2))
+100 * (exp(coef(bi_model_bi2))-1)
+```
+According to the new model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location has an household poverty below 4%, 2)if the location has an white population below 97%, 3) if the location is located within 300 meters of a SEPTA railway, and 4) if the location is within 1000 meters of city and boro. These four factors have the largest impact on the possibility of a location being urbanized. 
+
+The fact that an area has less than 4% of the households living below poverty line is associated with a *107% increase* in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
+
+In the same way, if the area has less than 97% of the white population there is a *91% decrease* in chance of successfully being urbanized.
+
+The fact that an area is located within 300 meters of a SEPTA railway is associated with *71% increase* in chance of successfully being urbanized.
+
+If a location is within 1000 meters of another city or boro, the chance of being urbanized is *increased by 67%*. 
+
+## Other suggestions
+
+Some additional newer data could be gathered, such as the population density, household income, and median housing value from 2000 census.  The growth rates of demographics and economics could be another huge factor for urbanization. These could be more relevant variables to determine probability of land use. 
+
+# Plots and Tables
+
+```{r variables against Slope}
+#Holding everything else constant, but percent poverty 
+
+## 0 in household poverty below 4%
+
+POV_possibility <- data.frame(bi_POV_less4 = 0, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility <-
+  POV_possibility %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility,type = "response"))
+
+## 1 in household poverty below 4%
+POV_possibility2 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility2 <-
+  POV_possibility2 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility2,type = "response"))
+
+##  0 in household poverty below 4% and 0 in city
+POV_possibility3 <- data.frame(bi_POV_less4 = 0, REGRAIL300 = 1, CITBORO_10 = 0, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility3 <-
+  POV_possibility3 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility3,type = "response"))
+
+## 1 in household poverty below % and 0 in city
+POV_possibility4 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 0, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility4 <-
+  POV_possibility4 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility4,type = "response"))
+
+
+#Combing the results in a new data frame
+POV_PRE <- data.frame(SLOPE = POV_possibility$SLOPE, 
+HOUSEPOV0_CITY1 = POV_possibility$predict_result, 
+HOUSEPOV1_CITY1 = POV_possibility2$predict_result,
+HOUSEPOV0_CITY0 = POV_possibility3$predict_result,
+HOUSEPOV1_CITY0 = POV_possibility4$predict_result)
+
+#Arrange the data by scenario
+dat <- gather(POV_PRE, -SLOPE, key = "Scenario", value = "value")
+#Plot the data 
+
+ggplot(dat, aes(x = SLOPE, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,0.2) +
+        xlab("% Slope") + ylab("Predicted Probability of Urbanization") + theme_light()
+```
+
+While holding every other variable constant (with their mean values), the graph above shows the predicting results when changing factor whether the location has less than 4 percent of households living below poverty line and within 1000 meters of a city or boro. 
+
+The purple curve denotes the probability when the location has both more than 4% of the households living in poverty and is within 1000 meters of a of a city or boro. 
+
+The blue curve denotes the probability when the location has more than 4% of the households living below poverty line, but *not* within 1,000 meters of a city or boro.
+
+The green curve denotes the probability when the location is within 1,000 meters of a city or boro, but has *less* than 4% of the households living below poverty line. 
+
+The red curve denotes the probability when the location has both *less* than 4% of the households living below poverty line and also *not* within 1,000 meters if a city or boro. 
+
+All the curves are plotted against the change in slope
+
+The graph above shows that when a location has more households living below poverty line and is 1,000 meters of a city or boro, the likelihood of it being urbanized is much higher. 
+
+The blue curve is higher than the green curve in the graph. This shows that whether the location has more than 4% of the households living below poverty line is a stronger predictor than whether the location is within 1000 meters of a city or boro. 
+
+The graph also shows as the percent slope increases, the predicted probably of urbanization decreases as well. 
+
+```{r variables against Slope}
+#Holding everything else constant, but percent poverty 
+
+## 0 in white
+
+WHI_possibility <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 0, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+WHI_possibility <-
+  POV_possibility %>%
+  mutate(predict_result = predict(bi_model_bi2,WHI_possibility,type = "response"))
+
+## 1 in white
+WHI_possibility2 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+WHI_possibility2 <-
+  POV_possibility2 %>%
+  mutate(predict_result = predict(bi_model_bi2,WHI_possibility2,type = "response"))
+
+#Combing the results in a new data frame
+WHI_PRE <- data.frame(SLOPE = WHI_possibility$SLOPE, WHITE_ABOVE_97PERCENT = WHI_possibility$predict_result, WHITE_BELOW_97PERCENT = WHI_possibility2$predict_result)
+
+#Arrange the data by scenario
+dat <- gather(WHI_PRE, -SLOPE, key = "Scenario", value = "value")
+#Plot the data 
+
+ggplot(dat, aes(x = SLOPE, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,0.2) +
+        xlab("% Slope") + ylab("Predcted Probabiility of Urbanization") + theme_light()
+
+```
+
+The above graph shows the predicted probability of urbanization when the percent of white population is either below or above 97% in a given location in 1990 against percent slope. 
+
+When the location has high poverty among households and is within 1000 meters of a city or boro, and other variables are held constant (with their mean values), whether the percent of white population in a location is below or above 97% shows an huge effect on the predicted probability of urbanization. 
+
+The blue line denotes the probability when an area has less than 97 white population in the area against percent households in poverty.
+
+The red line denotes the probability when an area has more than 97 white population in the area against percent households in poverty.
+
+The graph shows that, in Chester County, those areas that lived with less white population in 1990 had a higher chance of being urbanized in 2001 based on the graph. 
