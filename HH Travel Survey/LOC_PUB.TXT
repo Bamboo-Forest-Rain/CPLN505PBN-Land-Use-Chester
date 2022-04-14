@@ -1,0 +1,55 @@
+Variable Information:
+
+
+
+Name                                                                   Position
+
+LOCNO     Location Reference Number                                           1
+          Measurement level: Scale
+          Format: F10  Column Width: 8  Alignment: Right
+
+LTYPE     Location Type                                                       2
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Home
+              2    School
+              3    Work-1
+              4    Work-2
+              5    Other place
+
+AVSTA     Geocoding Status                                                    3
+          Measurement level: Nominal
+          Format: A7  Column Width: 7  Alignment: Left
+
+          Value    Label
+        C          Cursor Match
+        M          Matched
+        O          Out of Study Area
+        U          Unmatched
+
+CPA       County Planning Area                                                4
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+TAZ       Traffic Analysis Zone                                               5
+          Measurement level: Ordinal
+          Format: F4  Column Width: 8  Alignment: Right
+
+ZIP	  5 Digit Zip Code						      6
+          Measurement level: Ordinal
+          Format: F5  Column Width: 8  Alignment: Right
+
+LONGI	  Longitude							      7
+          Measurement level: Ordinal
+          Format: F2.2  Column Width: 8  Alignment: Right
+
+LATI	  Latitude							      8
+          Measurement level: Ordinal
+          Format: F2.3  Column Width: 8  Alignment: Right
+
+
+
+
+

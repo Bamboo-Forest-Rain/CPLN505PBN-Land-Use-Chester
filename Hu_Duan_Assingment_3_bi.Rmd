@@ -209,9 +209,9 @@ The thresholds for the new binary variables are based on their median value in t
 str(Chester_Numeric)
 summary(Chester_Numeric)
 
-REGRAIL300 + CITBORO_10 + 
-POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
-DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER
+# REGRAIL300 + CITBORO_10 + 
+# POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+# DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER
 
 Chester_bi <-
   Chester_L_Final%>%
@@ -287,7 +287,12 @@ The critical value is 5666.5. The null deviance value of the model (1763) is muc
 exp(coef(bi_model_bi2))
 100 * (exp(coef(bi_model_bi2))-1)
 ```
-According to the new model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location has an household poverty below 4%, 2)if the location has an white population below 97%, 3) if the location is located within 300 meters of a SEPTA railway, and 4) if the location is within 1000 meters of city and boro. These four factors have the largest impact on the possibility of a location being urbanized. 
+According to the new model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least:   
+1) if the location has an household poverty below 4%   
+2)if the location has an white population below 97%   
+3) if the location is located within 300 meters of a SEPTA railway    
+4) if the location is within 1000 meters of city and boro.   
+These four factors have the largest impact on the possibility of a location being urbanized. 
 
 The fact that an area has less than 4% of the households living below poverty line is associated with a *107% increase* in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
 
@@ -410,3 +415,5 @@ The blue line denotes the probability when an area has less than 97 white popula
 The red line denotes the probability when an area has more than 97 white population in the area against percent households in poverty.
 
 The graph shows that, in Chester County, those areas that lived with less white population in 1990 had a higher chance of being urbanized in 2001 based on the graph. 
+
+

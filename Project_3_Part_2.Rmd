@@ -1,0 +1,34 @@
+---
+title: "CPLN505-Assignment 3 Part 2"
+author: "Yihong Hu & Anna Duan"
+date: "4/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) # data processing and plotting package
+library(sf) # standard R spatial package
+library(kableExtra)
+library(gmodels)
+library(ggcorrplot)
+library(gganimate)
+library(gifski)
+library(caret)
+library(RSocrata)
+library(FNN)
+library(car)
+library(DescTools)
+library(LogisticDx)
+```
+
+# Introduction
+```{r Load Data}
+# Read Chester land use Data and its geometry
+Chester_L <- read.csv("Chester_Urban_Growth.csv") 
+Chester_L_geo <-
+  Chester_L%>%
+  st_as_sf(coords=c("X","Y"),crs = "EPSG:25832")
+
+head(Chester_L)
+```

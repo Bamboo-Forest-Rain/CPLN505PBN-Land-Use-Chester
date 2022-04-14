@@ -1,0 +1,136 @@
+Variable Information:
+
+
+
+Name                                                                   Position
+
+SAMPN     HH ID Number                                                        1
+          Measurement level: Ordinal
+          Format: F7  Column Width: 8  Alignment: Right
+
+VEHNO     Vehicle Number                                                      2
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+YEAR      Vehicle X - Year                                                    3
+          Measurement level: Ordinal
+          Format: F4  Column Width: 8  Alignment: Right
+
+          Value    Label
+           8888    DK
+           9999    RF
+
+MAKE      Vehicle X - Make                                                    4
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    ACURA
+              2    AUDI
+              3    BMW
+              4    BUICK
+              5    CADILLAC
+              6    CHEVROLET
+              7    CHRYSLER
+              8    DODGE
+              9    FORD
+             10    GEO
+             11    GMC
+             12    HARLEY DAVIDSON
+             13    HONDA
+             14    HYUNDAI
+             15    INFINITI
+             16    ISUZU
+             17    JAGUAR
+             18    JEEP
+             19    KAWASAKI
+             20    KIA
+             21    LEXUS
+             22    LINCOLN
+             23    MAZDA
+             24    MERCURY
+             25    MERCEDES
+             26    MITSUBISHI
+             27    NISSAN
+             28    OLDSMOBILE
+             29    PLYMOUTH
+             30    PONTIAC
+             31    PORSCHE
+             32    RANGE ROVER
+             33    SAAB
+             34    SATURN
+             35    SUBARU
+             36    SUZUKI
+             37    TOYOTA
+             38    VOLKSWAGEN
+             39    VOLVO
+             40    YAMAHA
+             97    Other, specify
+             98    Don't know
+             99    Refused
+
+MKOTH     Vehicle X - Make Other                                              5
+          Measurement level: Nominal
+          Format: A30  Column Width: 30  Alignment: Left
+
+MODEL     Vehicle X - Model                                                   9
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+TYPE      Vehicle X - Type                                                   13
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Auto
+              2    Auto-2 seat
+              3    Van
+              4    Sport utility vehicle
+              5    Utility vehicle
+              6    Station wagon
+              7    Pick-up truck
+              8    Motorcycle
+              9    Moped
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+TYPEO     Vehicle X - Other Type                                             14
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+VHOWN     Vehicle X - Vehicle Ownership                                      18
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Household owned/leased
+              2    Employer provided
+              3    Rental car
+              4    Borrowed from friend or relative
+              5    Other
+              8    Don't know
+              9    Refused
+
+VHONO     Vehicle X - Vehicle Ownership (if other)                           19
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+REGION    * No label *                                                       23
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    PA Region
+              2    NJ Region
+              3    SJ Total
+
+DVRPC     DVRPC or SJ Household                                              24
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    DV Total
+              2    SJ Total
+
+

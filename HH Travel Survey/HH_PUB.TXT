@@ -1,0 +1,576 @@
+Variable Information:
+
+Name                                                                   Position
+
+SAMPN     HH ID Number                                                        1
+          Measurement level: Ordinal
+          Format: F7  Column Width: 8  Alignment: Right
+
+LISTD     Listed/Unlisted                                                     2
+          Measurement level: Ordinal
+          Format: F1  Column Width: 6  Alignment: Right
+
+          Value    Label
+              1    Listed
+              2    Unlisted
+
+HADDR     Home Address                                                        3
+          Measurement level: Ordinal
+          Format: F8  Column Width: 8  Alignment: Right
+
+ADVLT     Advance Letter                                                      4
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              3    No Letter Sent
+              8    Don't recall receipt
+              9    Refused
+
+TOTVEH    Number of HH Vehicles                                               5
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+DWELL     Dwelling Type                                                       6
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Single family house detached from any other house
+              2    Single family house attached to one or more houses(townhouse
+              3    Building with at least 2 apartments (specify # of units)
+              4    Hotel/Motel
+              5    Mobile home or trailer
+              6    Dormitory/group quarters/barracks
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+DWELO     Dwelling type (if other)                                            7
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+
+
+DWELN     Number of Apartments                                               11
+          Measurement level: Ordinal
+          Format: F4  Column Width: 8  Alignment: Right
+
+          Value    Label
+           9999    DK/RF
+
+YRMOV     Year Moved In                                                      12
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Within the past year
+              2    1 to 5 years ago
+              3    More than 5 years ago
+              8    Don't know
+              9    Refused
+
+RENT      Own/rent                                                           13
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Rent
+              2    Own/buying
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+RENTO     Own/rent (if other)                                                14
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+DIARY     Diary Mailing Address Flag                                         18
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    At Home
+              2    PO Box
+              3    Another Address
+              8    DK
+              9    RF
+
+ENGL      Other Language Spoken                                              19
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+
+
+HELP      Help Fill Out                                                      20
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+LANG      Specific Language                                                  21
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Spanish
+              2    French
+              3    German
+              4    Chinese
+              5    Italian
+              6    Tagalog
+              7    Polish
+              8    Korean
+              9    Indic
+             10    Vietnamese
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+NHELP     Help From Friend or Neighbor                                       22
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+HHSIZE    HH Size                                                            23
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+NPHON     No. of HH Phone Lines                                              24
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             98    DK
+             99    RF
+
+
+
+NFAX      No. of Fax/Modem Lines                                             25
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             98    DK
+             99    RF
+
+NOPHO     Days Without a Phone                                               26
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+PHSER     How Long Without a Phone                                           27
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Less than 2 weeks
+              2    2 weeks to less than 1 month
+              3    1 month to less than 3 months
+              4    3 months to less than 6 months
+              5    6 months to less than 1 year
+              8    Don't know
+              9    Refused
+
+SHPHN     Shared Phone Lines                                                 28
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+SHNUM     No. of Households Sharing Phone Line                               29
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             98    DK
+             99    RF
+
+
+
+ETHNC     HH Ethnicity                                                       30
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Black/African American, (non-Hispanic)
+              2    White, (non-Hispanic)
+              3    Asian/Pacific Islander
+              4    American Indian
+              5    Hispanic
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+ETHNO     HH Ethnicity (if other)                                            31
+          Measurement level: Nominal
+          Format: A25  Column Width: 25  Alignment: Left
+
+INCLV     Total 1999 Annual Household Income Level                           35
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Under $50k
+              2    $50k +
+              8    Don't know
+              9    Refused
+
+INCOM     Total 1999 Annual Household Income                                 36
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              2    < $15k
+              3    $15k to < $25k
+              4    $25k to < $35k
+              5    $35k to < $50k
+              6    $50k to < $75k
+              7    $75k to < $100k
+              8    $100k to <$125k
+              9    $125k to < $150k
+             10    $150k or more
+             98    Don't know
+             99    Refused
+
+OINCM     Sources of Other income                                            37
+          Measurement level: Ordinal
+          Format: F3  Column Width: 8  Alignment: Right
+
+          Value    Label
+
+              1    Welfare
+              2    Other govt benefit sources
+              3    None
+              8    DK
+              9    RF
+
+ASSN      Travel Day                                                         38
+          Measurement level: Ordinal
+          Format: F3  Column Width: 7  Alignment: Right
+
+          Value    Label
+            139    February 8 Tuesday
+            140    February 9 Wednesday
+            141    February 10 Thursday
+            142    February 11 Friday
+            201    April 10 Monday
+            202    April 11 Tuesday
+            203    April 12 Wednesday
+            204    April 13 Thursday
+            205    April 14 Friday
+            208    April 17 Monday
+            209    April 18 Tuesday
+            210    April 19 Wednesday
+            211    April 20 Thursday
+            215    April 24 Monday
+            216    April 25 Tuesday
+            217    April 26 Wednesday
+            218    April 27 Thursday
+            219    April 28 Friday
+            222    May 1 Monday
+            223    May 2 Tuesday
+            224    May 3 Wednesday
+            225    May 4 Thursday
+            226    May 5 Friday
+            229    May 8 Monday
+            230    May 9 Tuesday
+            231    May 10 Wednesday
+            232    May 11 Thursday
+            233    May 12 Friday
+            236    May 15 Monday
+            237    May 16 Tuesday
+            238    May 17 Wednesday
+            239    May 18 Thursday
+            243    May 22 Monday
+            244    May 23 Tuesday
+            245    May 24 Wednesday
+            246    May 25 Thursday
+            247    May 26 Friday
+            251    May 30 Tuesday
+            252    May 31 Wednesday
+            253    June 1 Thursday
+            254    June 2 Friday
+            255    June 5 Monday
+            256    June 6 Tuesday
+            257    June 7 Wednesday
+            258    June 8 Thursday
+            259    June 9 Friday
+            260    June 12 Monday
+            261    June 13 Tuesday
+            262    June 14 Wednesday
+            263    June 15 Thursday
+            264    June 16 Friday
+            265    June 19 Monday
+            266    June 20 Tuesday
+            267    June 21 Wednesday
+            268    June 22 Thursday
+            350    September 6 Wednesday
+            351    September 7 Thursday
+            352    September 8 Friday
+            355    September 11 Monday
+            356    September 12 Tuesday
+            357    September 13 Wednesday
+            358    September 14 Thursday
+            359    September 15 Friday
+            360    September 16 Saturday
+            362    September 18 Monday
+            363    September 19 Tuesday
+            364    September 20 Wednesday
+            365    September 21 Thursday
+            366    September 22 Friday
+            369    September 25 Monday
+            370    September 26 Tuesday
+            371    September 27 Wednesday
+            372    September 28 Thursday
+            373    September 29 Friday
+            376    October 2 Monday
+            377    October 3 Tuesday
+            378    October 4 Wednesday
+            379    October 5 Thursday
+            380    October 6 Friday
+            384    October 10 Tuesday
+            385    October 11 Wednesday
+            386    October 12 Thursday
+            387    October 13 Friday
+            390    October 16 Monday
+            391    October 17 Tuesday
+            392    October 18 Wednesday
+            393    October 19 Thursday
+            394    October 20 Friday
+            397    October 23 Monday
+            398    October 24 Tuesday
+            399    October 25 Wednesday
+            400    October 26 Thursday
+            401    October 27 Friday
+            404    October 30 Monday
+            405    October 31 Tuesday
+            406    November 1 Wednesday
+            407    November 2 Thursday
+            408    November 3 Friday
+            411    November 6 Monday
+            413    November 8 Wednesday
+            414    November 9 Thursday
+            415    November 10 Friday
+            418    November 13 Monday
+            419    November 14 Tuesday
+            420    November 15 Wednesday
+            421    November 16 Thursday
+            422    November 17 Friday
+            425    November 20 Monday
+            426    November 21 Tuesday
+            432    November 27 Monday
+            433    November 28 Tuesday
+            434    November 29 Wednesday
+            435    November 30 Thursday
+            436    December 1 Friday
+            439    December 4 Monday
+            440    December 5 Tuesday
+            441    December 6 Wednesday
+            442    December 7 Thursday
+            443    Deceember 8 Friday
+
+DPHON     Call Back at Different Phone                                       39
+          Measurement level: Ordinal
+          Format: F1  Column Width: 6  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+NVIST     Number of out-of-Town Vistors on Travel Day                        40
+          Measurement level: Ordinal
+          Format: F2  Column Width: 5  Alignment: Right
+
+NPLAC     Number of Places HH Members Visited                                41
+          Measurement level: Ordinal
+          Format: F3  Column Width: 4  Alignment: Right
+
+NTRIPS    Number of Household Trips                                          42
+          Measurement level: Scale
+          Format: F4  Column Width: 4  Alignment: Right
+
+NOWRK     Total Number of Workers                                            43
+          Measurement level: Ordinal
+          Format: F2  Column Width: 6  Alignment: Right
+
+NOSTU     Total Number of Students                                           44
+          Measurement level: Ordinal
+          Format: F2  Column Width: 5  Alignment: Right
+
+OWNSH     Share Ownership of Another Home                                    45
+          Measurement level: Ordinal
+          Format: F1  Column Width: 4  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+
+
+WEEKS     Time Stay at 2nd Residence                                         46
+          Measurement level: Ordinal
+          Format: F2  Column Width: 3  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+
+WEEKU     Weeks or Months                                                    47
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    Weeks
+              2    Months
+              8    DK
+              9    RF
+
+EACCT     E-mail Account                                                     48
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+CPA       County Planning Area                                               49
+          Measurement level: Ordinal
+          Format: F2  Column Width: 4  Alignment: Right
+
+FIPS      HH Fipscode                                                        50
+          Measurement level: Ordinal
+          Format: F5  Column Width: 5  Alignment: Right
+
+          Value    Label
+             14    Outside study area/Other county
+          34001    Atlantic
+          34005    Burlington
+          34007    Camden
+          34009    Cape May
+          34011    Cumberland
+          34015    Gloucester
+          34021    Mercer
+          34033    Salem
+          42011    Berks
+          42017    Bucks
+          42029    Chester
+          42045    Delaware
+          42091    Montgomery
+          42101    Philadelphia
+
+
+
+DAYOFWK   Day of Week                                                        51
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Monday
+              2    Tuesday
+              3    Wednesday
+              4    Thursday
+              5    Friday
+
+HBW       Home-based Work Trips                                              52
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+HBO       Home-based other Trips                                             53
+          Measurement level: Scale
+          Format: F2  Column Width: 8  Alignment: Right
+
+NHB       Non-home based Trips                                               54
+          Measurement level: Scale
+          Format: F2  Column Width: 8  Alignment: Right
+
+MOTTRIP   Motorized Trips                                                    55
+          Measurement level: Scale
+          Format: F2  Column Width: 8  Alignment: Right
+
+NOMOTTRP  Non-motorized Trips                                                56
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+REGION    * No label *                                                       57
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    PA Region
+              2    NJ Region
+              3    SJ Total
+
+DVRPC     DVRPC or SJ Household                                              58
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    DV Total
+              2    SJ Total
+
+FACTOR1   * No label *                                                       59
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+FACTOR2   * No label *                                                       60
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+FACTOR3   * No label *                                                       61
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+FACTOR4   * No label *                                                       62
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+FACTOR5   * No label *                                                       63
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+GVWT      * No label *                                                       64
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+FACTOR6   * No label *                                                       65
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+EXPFACT   * No label *                                                       66
+          Measurement level: Scale
+          Format: F8.4  Column Width: 8  Alignment: Right
+
+

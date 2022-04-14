@@ -1,0 +1,1052 @@
+Variable Information:
+
+Name                                                                   Position
+
+SAMPN     HH ID Number                                                        1
+          Measurement level: Ordinal
+          Format: F7  Column Width: 7  Alignment: Right
+
+PERNO     Person ID Number                                                    2
+          Measurement level: Ordinal
+          Format: F3  Column Width: 3  Alignment: Right
+
+GEND      Person X - Gender                                                   3
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Male
+              2    Female
+              8    DK
+              9    RF
+
+AGE       Person X - Age                                                      4
+          Measurement level: Scale
+          Format: F3  Column Width: 8  Alignment: Right
+
+          Value    Label
+            998    DK
+            999    RF
+
+LIC       Person X - Valid Drivers License                                    5
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+RESP      Is Person X the Respondent                                          6
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+
+
+
+RELAT     Person X - Relationship                                             7
+          Measurement level: Ordinal
+          Format: F2  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    Self (respondent)
+              2    Spouse/fiancée/life partner
+              3    Son/Daughter
+              4    Father/Mother
+              5    Brother/Sister
+              6    Grandparent
+              7    Grandchild
+              8    Live-in help
+              9    Roommate/other non-related
+             10    Other related
+             99    Don't know/refused
+
+DISAB     Disability                                                          8
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+DISTY1    Type of Disability 1                                                9
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Blind/visually impaired
+              2    Hearing impaired or deaf
+              3    Cane or walker
+              4    Wheelchair non-transferable
+              5    Wheelchair transferable
+              6    Cognitively challenged
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+DISTY2    Type of Disability 2                                               10
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Blind/visually impaired
+              2    Hearing impaired or deaf
+              3    Cane or walker
+              4    Wheelchair non-transferable
+              5    Wheelchair transferable
+              6    Cognitively challenged
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+DABLO     Type of Disability (if other)                                      11
+          Measurement level: Nominal
+          Format: A50  Column Width: 3  Alignment: Left
+
+EDUC      School or Daycare                                                  18
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+LEVEL     Type of School Enrolled in                                         19
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Daycare
+              2    Preschool
+              3    Kindergarten to elementary (K-6)
+              4    Secondary (7-12)
+              5    Vocational or technical school
+              6    College or university
+              7    Adult school
+              8    Don't know
+              9    Refused
+
+S_LOC     School Locator Code                                                20
+          Measurement level: Ordinal
+          Format: F8  Column Width: 8  Alignment: Right
+
+SHOME     Home Schooled Flag                                                 21
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Home schooled
+              2    Not home schooled
+
+SDAY      Days Per Week Attend School                                        22
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+
+
+
+SMODE1    Mode Used to go to School 1                                        23
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+SMODE2    Mode Used to go to School 2                                        24
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+SMODE3    Mode Used to go to School 3                                        25
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/Shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+SMOO      Mode Used to go to School - Other                                  26
+          Measurement level: Ordinal
+          Format: F20.5  Column Width: 8  Alignment: Right
+
+SCOST     Cost to Park Vehicle at School                                     27
+          Measurement level: Ordinal
+          Format: F6.2  Column Width: 8  Alignment: Right
+
+          Value    Label
+            .00    Free
+      999998.00    DK
+      999999.00    RF
+
+
+
+SUNIT     Unit of Payment                                                    28
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              0    Free
+              1    Per hour
+              2    Per day
+              3    Per week
+              4    Per month
+              5    Per quarter
+              6    Per semester
+              7    Per school year
+              8    Don't know
+              9    Refused
+
+EMPL      Employment                                                         29
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    FT
+              2    PT
+              3    No
+              8    DK
+              9    RF
+
+NOJOB     Unemployed                                                         30
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Retired
+              2    Homemaker
+              3    Unemployed but looking for work
+              4    Unemployed not seeking employment
+              5    Student (part-time or full-time)
+              8    Don't know
+              9    Refused
+
+NMJOB     More Than One Job                                                  31
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+
+
+ETYPE     Employer                                                           32
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    A private company
+              2    Government
+              3    Self-employed
+              4    Institution & non-profit organizations
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+ETYPO     Employer (if other)                                                33
+          Measurement level: Nominal
+          Format: A40  Column Width: 2  Alignment: Left
+
+W1IND     Industry                                                           38
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+             11    Agriculture/forestry/fishing
+             21    Mining
+             22    Utilities
+             23    Construction
+             31    Manufacturing - nondurable goods
+             32    Manufacturing - durable goods
+             42    Wholesale trade
+             44    Retail trade
+             48    Transportation and warehousing
+             51    Information
+             52    Finance or insurance
+             53    Real estate
+             54    Professional, scientific, and technical services
+             55    Management of companies and enterprises
+             56    Administrative and support services
+             61    Educational services
+             62    Healthcare and social assistance
+             71    Arts, entertainment, and recreation
+             72    Accommodations and food services
+             81    Other services (excluding public administration)
+             92    Public administration
+             97    Other, specify
+             98    Don't know
+             99    Refused
+
+W1INO     Industry (if other)                                                39
+          Measurement level: Nominal
+          Format: A60  Column Width: 2  Alignment: Left
+
+
+
+W1OCC     Occupation                                                         47
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Executive, admin., or managerial
+              2    Professional specialty
+              3    Technicians or related support
+              4    Sales
+              5    Administrative support, clerical
+              6    Private household
+              7    Protective services
+              8    Services, execpt protective and household
+              9    Farming, forestry, or fishing
+             10    Precision, production, craft, or repair
+             11    Machine operator, assembler, or inspector
+             12    Transportation, or material moving
+             13    Handler, equipment cleaner, helper, or laborer
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+W1OCO     Occupation (if other)                                              48
+          Measurement level: Nominal
+          Format: A30  Column Width: 2  Alignment: Left
+
+W1TIM     Length of Time at Main Job                                         52
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    Less than a year
+              2    1 to 5 years
+              3    More than 5 years
+              8    Don't know
+              9    Refused
+
+W1DAY     Weekdays Per Week at Job                                           53
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+
+W1HOM     Telecommuting Days                                                 54
+          Measurement level: Ordinal
+          Format: F2  Column Width: 6  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+             97    Other
+
+W1HMO     Telecommuting Days (if other)                                      55
+          Measurement level: Nominal
+          Format: A60  Column Width: 3  Alignment: Left
+
+W1CPR     Compressed Work Week                                               63
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+W1CPT     Type of Compressed Work Week                                       64
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    9/80
+              2    4/40
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+W1CPO     Type of Compressed Work Week (if other)                            65
+          Measurement level: Nominal
+          Format: A30  Column Width: 2  Alignment: Left
+
+W1WKE     Weekend Work                                                       69
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+
+W1WKD1    Weekend Work Detail 1                                              70
+          Measurement level: Ordinal
+          Format: F5  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Saturday AM
+              2    Saturday PM
+              3    Sunday AM
+              4    Sunday PM
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+
+
+W1WKD2    Weekend Work Detail 2                                              71
+          Measurement level: Ordinal
+          Format: F5  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Saturday AM
+              2    Saturday PM
+              3    Sunday AM
+              4    Sunday PM
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+W1WKD3    Weekend Work Detail 3                                              72
+          Measurement level: Ordinal
+          Format: F5  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Saturday AM
+              2    Saturday PM
+              3    Sunday AM
+              4    Sunday PM
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+W1WKD4    Weekend Work Detail 4                                              73
+          Measurement level: Ordinal
+          Format: F5  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Saturday AM
+              2    Saturday PM
+              3    Sunday AM
+              4    Sunday PM
+              7    Other (specify)
+              8    Don't know
+              9    Refused
+
+O_W1WKD   Other Weekend Work Detail                                          74
+          Measurement level: Nominal
+          Format: A50  Column Width: 2  Alignment: Left
+
+W1TYP     Main Job Address Flag                                              81
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Home
+              2    Complete street address known/given
+              3    Cross streets known/given
+              8    Don't know
+              9    Refused
+
+W1LOC     Locator Code for Work Address                                      82
+          Measurement level: Ordinal
+          Format: F8  Column Width: 2  Alignment: Right
+
+W1MOD1    Mode to Work 1                                                     83
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+W1MOD2    Mode to Work 2                                                     84
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+W1MOD3    Mode to Work 3                                                     85
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+             11    Walk
+             12    Wheelchair
+             14    Bicycle
+             21    Auto/van/SUV driver
+             22    Auto/van/SUV passenger
+             23    Motorcycle/moped
+             31    Shared ride (carpool, vanpool, etc.)
+             41    Bus (SEPTA, NJ transit)
+             42    School bus
+             43    Commuter van/shuttle bus: from employer or GRP contract
+             44    Paratransit/demand responsive (elderly/handicapped)
+             45    Intercity bus (Greyhound, Trailways, Berber, etc.)
+             46    Charter bus
+             47    Trolley, trolley bus
+             48    Jitney
+             51    Subway/elevated (Market-Frankford, Broad St., PATCO)
+             52    Commuter railroad (SEPTA, NJ transit)
+             53    Amtrak or other railroad
+             54    Taxi/limousine
+             55    Boat/ferry
+             56    Airplane/helicopter
+             97    Other
+             98    Don't know
+             99    Refused
+
+W1MOO     Mode to Work (if other)                                            86
+          Measurement level: Nominal
+          Format: A25  Column Width: 2  Alignment: Left
+
+W1NDV     Vehicle for Work                                                   90
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+W1CPK     Cost to Park Vehicle at Work (dollar figure)                       91
+          Measurement level: Ordinal
+          Format: F6.2  Column Width: 2  Alignment: Right
+
+          Value    Label
+            .00    Free
+      999998.00    DK
+      999999.00    RF
+
+W1CPU     Cost to Park Vehicle at Work - Unit                                92
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+
+              0    Free/employer provided
+              1    Per hour
+              2    Per day
+              3    Per week
+              4    Per month
+              5    Per quarter
+              6    Per semester
+              7    Per year
+              8    Don't know
+              9    Refused
+
+W1EPK     Employer Subsidize Parking                                         93
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+W1PKL     Where Park at Work                                                 94
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    In a parking lot or garage at work
+              2    In a parking lot or garage off-site
+              3    On the street
+              4    Garage/parking lot at home
+              7    Other
+              8    Don't know
+              9    Refused
+
+W1PKLO    Other Place to Park at Work                                        95
+          Measurement level: Nominal
+          Format: A25  Column Width: 2  Alignment: Left
+
+W1WLK     Time to Walk to Work from Parking Location                         99
+          Measurement level: Ordinal
+          Format: F4  Column Width: 2  Alignment: Right
+
+          Value    Label
+             98    DK
+             99    RF
+
+
+
+TRNST     Employer Subsidize Transit                                        100
+          Measurement level: Ordinal
+          Format: F2  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+VTRAN     Use Transit Subsidy                                               101
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+TRNCT     Cost of Using Transit (dollar figure)                             102
+          Measurement level: Ordinal
+          Format: F6.2  Column Width: 2  Alignment: Right
+
+          Value    Label
+            .00    Free
+      999998.00    DK
+      999999.00    RF
+
+TRNCU     Cost of Using Transit - Unit                                      103
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              0    Free
+              1    Per day
+              2    Per week
+              3    Per month
+              4    Per year
+              7    Other, specify
+              8    Don't know
+              9    Refused
+
+SCHED     Constant Schedule                                                 104
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+
+
+WSTIM     Work Start Time                                                   105
+          Measurement level: Ordinal
+          Format: F4  Column Width: 5  Alignment: Right
+
+          Value    Label
+           8888    DK
+           9999    RF
+
+WETIM     Work End Time                                                     106
+          Measurement level: Ordinal
+          Format: F4  Column Width: 5  Alignment: Right
+          Value    Label
+
+           8888    DK
+           9999    RF
+
+SETIM     Change in Work Times                                              107
+          Measurement level: Ordinal
+          Format: F1  Column Width: 2  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              8    DK
+              9    RF
+
+VSTIM     Variation in Work Start Time                                      108
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    Start time can't vary
+              2    Up to 15 minutes
+              3    16 to 30 minutes
+              4    31 to 60 minutes
+              5    More than 1 hour to 2 hours
+              6    Or something else...(specify)
+              7    Other
+              8    Don't know
+              9    Refused
+
+VSTMO     Variation in Work Start Time (if other)                           109
+          Measurement level: Nominal
+          Format: A25  Column Width: 2  Alignment: Left
+
+
+
+VETIM     Variation in Work End Time                                        113
+          Measurement level: Ordinal
+          Format: F1  Column Width: 3  Alignment: Right
+
+          Value    Label
+              1    End time can't vary
+              2    Up to 15 minutes
+              3    16 to 30 minutes
+              4    31 to 60 minutes
+              5    More than 1 hour to 2 hours
+              6    Or something else....(specify)
+              7    Other
+              8    Don't know
+              9    Refused
+
+VETMO     Variation in Work End Time (if other)                             114
+          Measurement level: Nominal
+          Format: A25  Column Width: 2  Alignment: Left
+
+W2TY      2nd Job - Company Type                                            118
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    A private company
+              2    Government
+              3    Self-employed
+              4    Institution & non-profit organizations
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+W2TYO     2nd Job Type (if other)                                           119
+          Measurement level: Nominal
+          Format: A30  Column Width: 30  Alignment: Left
+
+W2TYP     2nd Job Address Flag                                              123
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Home
+              2    Complete street address known/given
+              3    Cross streets known/given
+              8    Don't know
+              9    Refused
+
+W2LOC     Locator Code for 2nd Job Address                                  124
+          Measurement level: Ordinal
+          Format: F8  Column Width: 8  Alignment: Right
+
+
+
+W2IND     Industry for 2nd Job                                              125
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             11    Agriculture/forestry/fishing
+             21    Mining
+             22    Utilities
+             23    Construction
+             31    Manufacturing - nondurable goods
+             32    Manufacturing - durable goods
+             42    Wholesale trade
+             44    Retail trade
+             48    Transportation and warehousing
+             51    Information
+             52    Finance or insurance
+             53    Real estate
+             54    Professional, scientific, and technical services
+             55    Management of companies and enterprises
+             56    Administrative and support services
+             61    Educational services
+             62    Healthcare and social assistance
+             71    Arts, entertainment, and recreation
+             72    Accommodations and food service
+             81    Other services (excluding public administration)
+             92    Public administration
+             97    Other, specify
+             98    Don't know
+             99    Refused
+
+W2INO     Other Industry for 2nd Job                                        126
+          Measurement level: Nominal
+          Format: A30  Column Width: 30  Alignment: Left
+
+W2OCC     2nd Job - Occupation                                              130
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Executive, admin., or managerial
+              2    Professional specialty
+              3    Technicians or related support
+              4    Sales
+              5    Administrative support, clerical
+              6    Private household
+              7    Protective services
+              8    Service, except protective and household
+              9    Farming, forestry, or fishing
+             10    Precision, production, craft, or repair
+             11    Machine operator, assembler, or inspector
+             12    Transportation, or material moving
+             13    Handler, equipment cleaner, helper, or laborer
+             97    Other (specify)
+             98    Don't know
+             99    Refused
+
+
+
+W2OCO     2nd Job Occupation (if other)                                     131
+          Measurement level: Nominal
+          Format: A30  Column Width: 30  Alignment: Left
+
+W2DAY     Days Worked per Week at 2nd Job                                   135
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              8    DK
+              9    RF
+
+W2HOM     Days Worked at Home for Second Job                                136
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+             97    Other
+             98    DK
+             99    RF
+
+W2HOO     Days Worked at Home for 2nd Job (if other)                        137
+          Measurement level: Nominal
+          Format: A30  Column Width: 30  Alignment: Left
+
+W2ST      2nd Job - Work Start Time                                         141
+          Measurement level: Ordinal
+          Format: F4  Column Width: 8  Alignment: Right
+
+          Value    Label
+           8888    DK
+           9999    RF
+
+W2ET      2nd Job - Work End Time                                           142
+          Measurement level: Ordinal
+          Format: F4  Column Width: 8  Alignment: Right
+
+          Value    Label
+           8888    DK
+           9999    RF
+
+HMALL     Was respondent home all day?                                      143
+          Measurement level: Ordinal
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+
+PNMPL     Number of Places Visited                                          144
+          Measurement level: Ordinal
+          Format: F3  Column Width: 8  Alignment: Right
+
+NTRIPS    Number of Trips                                                   145
+          Measurement level: Ordinal
+          Format: F4  Column Width: 6  Alignment: Right
+
+DIARY     Diary Use                                                         146
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    Yes
+              2    No
+              9    DK/RF
+
+PROXY     Proxy Reporting                                                   147
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+          Value    Label
+              0    Self
+             98    DK
+             99    RF
+
+HBW       Home-based work Trips                                             148
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+HBO       Home-based other Trips                                            149
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+NHB       Non-home based Trips                                              150
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+MOTTRIP   Motorized Trips                                                   151
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+NOMOTTRP  Non-motorized Trips                                               152
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+CPA       County Planning Area                                              153
+          Measurement level: Ordinal
+          Format: F2  Column Width: 8  Alignment: Right
+
+
+
+FIPS      HH Fipscode                                                       154
+          Measurement level: Ordinal
+          Format: F5  Column Width: 8  Alignment: Right
+
+          Value    Label
+             14    Outside study area/Other county
+          34001    Atlantic
+          34005    Burlington
+          34007    Camden
+          34009    Cape May
+          34011    Cumberland
+          34015    Gloucester
+          34021    Mercer
+          34033    Salem
+          42011    Berks
+          42017    Bucks
+          42029    Chester
+          42045    Delaware
+          42091    Montgomery
+          42101    Philadelphia
+
+REGION    * No label *                                                      155
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    PA Region
+              2    NJ Region
+              3    SJ Total
+
+DVRPC     DVRPC or SJ Household                                             156
+          Measurement level: Scale
+          Format: F1  Column Width: 8  Alignment: Right
+
+          Value    Label
+              1    DV Total
+              2    SJ Total
+
+
