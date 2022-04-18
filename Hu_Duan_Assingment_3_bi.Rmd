@@ -88,7 +88,7 @@ summary(bi_model)
 
 ```
 
-The AIC is shown to be 1451 with very few significant variables. A backward and forward selection methods are used to give a list of the most related variables. Some valuables returned NA in the model, which means they are co-linear with other variables. These variables should be removed. 
+The AIC is shown to be 1451 with very few significant variables. A backward and forward selection methods are used to give a list of the most related variables. Some variables returned NA in the model, which means they are co-linear with other variables. These variables should be removed. 
 
 ```{r}
 #Remove "Park", "Water", "College" variables in the regression.

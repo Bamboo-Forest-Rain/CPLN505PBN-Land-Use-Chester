@@ -199,17 +199,43 @@ trips_person_hh$binary <- pred$binary
 
 ```
 
-
-
 ## Model 2: Walk or Bike to Work   
-Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant. 
-```{r walk bike}
+Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant, and the AIC is 915.  
+```{r walk bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 mod_bike <- glm ( bike_walk_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
 summary(mod_bike)
 ```
 
+Using vif(), we can see that the variance inflation factor for all variables is below 5, meaning the model does not suffer from too much collinearity.  
+```{r vif bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+vif(mod_bike)
+```
 
+To create the "leanest and meanest" model, we use forward and backward selection to select the variables which contribute statistically significantly to the model and lower its AIC.     
+```{r fwd bkwd selection bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Backward Selection
+step(glm(bike_walk_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh), direction = "backward")
 
+#Forward Selection
+fullmod<-glm(bike_walk_work ~ TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, family = binomial, data = trips_person_hh)
+
+intonly<-glm(bike_walk_work ~ 1, family = binomial, data = trips_person_hh)
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+```
+
+Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + DISAB (disability) + INCOME. After running the model, I remove NPHON, INCOME, and DISAB because they are not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.     
+```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
+
+mod_bike_3 <- glm(drove_work ~ TRPDUR + AGE + TOTVEH + RENT + NPHON + INCOME + NOWRK + EDUC + DISAB, family = binomial, data = trips_person_hh)
+summary(mod_bike_3)
+
+#test fit
+qchisq(.95, df=2918) 
+```
+
+```{r bike select vars, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 pred <- as.data.frame(fitted(mod_bike))
 pred <- rename(pred, "prob" = "fitted(mod_bike)")
 pred <- mutate(pred, "binary_b" = ifelse(prob < 0.5, 0, 1))
@@ -223,53 +249,13 @@ head(trips_person_hh)
 
 
 
-#chi square
-qchisq(.95, df=2905)      
-
 #anova
 anova(mod_bike, test="Chisq") #anova tells us that the following are statistically significant contributions: Trip duration, gender, age, total vehicles, household size, no work 
-
-mod_bike_2 <- glm ( bike_walk_work ~  TRPDUR  +  AGE + HHSIZE +  INCOME +  NOWRK, data=trips_person_hh, family = binomial) #Trip duration, age, total vehicle, household size, income, no work
-summary(mod_bike_2)
-
-
-
-#calculate predicted probaviliites 
-pred <- as.data.frame(fitted(mod_bike_2))
-pred <- rename(pred, "prob" = "fitted(mod_bike_2)")
-pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
-#append to original df
-trips_person_hh$binary <- pred$binary
-head(trips_person_hh)
-       
-(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$drove_work == 0  #10%: a little better
-  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
 
 
 vif(mod_bike_2) #very good
 
 
-#Backward Selection
-step(glm(bike_walk_work ~  TRPDUR  +  AGE + HHSIZE +  INCOME +  NOWRK, family = binomial, data = trips_person_hh), direction = "backward")
-
-#Forward Selection
-fullmod<-glm(bike_walk_work ~TRPDUR  +  AGE + HHSIZE +  INCOME +  NOWRK, family = binomial, data = trips_person_hh)
-
-intonly<-glm(bike_walk_work ~ 1, family = binomial, data = trips_person_hh)
-
-step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward") #final : trip duration, age, household size
-
-
-mod_bike_3 <- glm(bike_walk_work ~TRPDUR  +  AGE + HHSIZE, family = binomial, data = trips_person_hh)
-summary(mod_bike_3)
-
-
-#test fit
-qchisq(.95, df=2915)       #doesn't pass
-
-
-exp(coef(mod_bike_3))
-100 * (exp(coef(mod_bike_3))-1)
 ```
 
 ## Model 3: Drive to work, carpool, transit, walk, or bike  
