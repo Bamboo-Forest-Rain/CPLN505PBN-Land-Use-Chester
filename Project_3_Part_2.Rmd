@@ -314,6 +314,8 @@ qchisq(.95, df=2915)       #doesn't pass
 exp(coef(mod_bike_3))
 100 * (exp(coef(mod_bike_3))-1)
 ```
+
 ## Model 3: Drive to work, carpool, transit, walk, or bike  
+
 ```{r drive carpool transit walk or bike}
 ```
