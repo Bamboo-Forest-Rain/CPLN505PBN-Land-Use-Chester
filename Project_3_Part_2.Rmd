@@ -1,5 +1,5 @@
 ---
-title: "CPLN505-Assignment 3 Part 2"
+title: "CPLN505-Assignment 3 Part 2: Mode Choice Modelling"
 author: "Yihong Hu & Anna Duan"
 date: "4/14/2022"
 output: html_document
@@ -22,10 +22,12 @@ library(DescTools)
 library(LogisticDx)
 ```
 
-# Introduction
-
-
-```{r Read Data}
+# Introduction    
+In this report, we model the following using trip data from the Delaware Valley Regional Planning Commission:        
+1. Whether a commuter drove to work      
+2. Whether a commuter walked or biked to work    
+3. Whether a commuter drove to work, carpooled, took public transit, or walked or biked          
+```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 # Read Chester land use Data and its geometry
 trips <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
@@ -46,8 +48,8 @@ persons <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Cheste
   dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
 ```
 
-
-```{r clean Data}
+First, we clean the data and merge three datasets capturing participants' trip, household, and demographic attributes. We clean out NAs, and filter the data to make sure the values are all in the correct ranges.  
+```{r clean Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 trips$drove_work[which(is.na(trips$drove_work))]<-0
 trips$bike_walk_work[which(is.na(trips$bike_walk_work))]<-0
@@ -132,124 +134,79 @@ trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
 
 ```
 
-## Model 1: Drive to work or not   
-```{r modelling}
+## Model 1: Drive to Work       
+First, we test a model using the maximum number of variables, just as a baseline. This model includes trip duration, gender, age, disability, education, total vehicles in a household, adults in household, rent or not, whether they speak English, household size, number of phones in the household, income, and whether a household has working adults. The AIC is 1493, with just about half of the variables marked as statistically significant.   
+```{r modelling, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 mod_drive <- glm ( drove_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
 summary(mod_drive)
 
-
-# 
-# #plot results
-# 
-# newdat_gg<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
-# colnames(newdat_gg)<- c("TRPDUR", "INCOME", "AGE")
-# newdat_gg$TRPDUR <- trips_person_hh$TRPDUR
-# newdat_gg$INCOME <- 50000
-# newdat_gg$AGE <- mean(trips_person_hh$AGE)
-# 
-# newdat_gg_1<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
-# colnames(newdat_gg_1)<- c("TRPDUR", "INCOME", "AGE")
-# newdat_gg_1$TRPDUR <- trips_person_hh$TRPDUR
-# newdat_gg_1$INCOME <- 50000
-# newdat_gg_1$AGE <- 23
-# 
-# newdat_gg_2<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
-# colnames(newdat_gg_2)<- c("TRPDUR", "INCOME", "AGE")
-# newdat_gg_2$TRPDUR <- trips_person_hh$TRPDUR
-# newdat_gg_2$INCOME <- 50000
-# newdat_gg_2$AGE <- 60
-# 
-# 
-# pred_dat<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
-# colnames(pred_dat)<- c("TRPDUR", "Pred_Age43_Inc50K", "Pred_Age23_Inc50K", "Pred_Age60_Inc50K")
-# pred_dat$TRPDUR<-trips_person_hh$TRPDUR
-# pred_dat$Pred_Age43_Inc50K<- predict(mod_drive, newdat_gg, type="response")
-# pred_dat$Pred_Age23_Inc50K<- predict(mod_drive, newdat_gg_1, type="response")
-# pred_dat$Pred_Age60_Inc50K<- predict(mod_drive, newdat_gg_2, type="response")
-# 
-# dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
-# 
-# ggplot(dat, aes(x = TRPDUR, y = value, colour = Scenario)) + 
-#         geom_line() + ylim(0,1) +
-#         xlab("Trip Duration") + ylab("Predicted Probability of Drive Alone")
-# 
-
-#ACCURACY
-
-#calculate predicted probaviliites 
-pred <- as.data.frame(fitted(mod_drive))
-pred <- rename(pred, "prob" = "fitted(mod_drive)")
-pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
-#append to original df
-trips_person_hh$binary <- pred$binary
-head(trips_person_hh)
-       
-(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$drove_work == 0  #92%: not bad
-  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
-
-#chi square
-qchisq(.95, df=2915)      
-
-#anova
-anova(mod_drive, test="Chisq") #anova tells us that the following are statistically significant contributions: Trip duration, gender, age, total vehicles, household size, no work 
-
-mod_drive_2 <- glm ( drove_work ~  TRPDUR  + GEND + AGE + TOTVEH +  HHSIZE +   NOWRK, data=trips_person_hh, family = binomial)
-summary(mod_drive)
-
-
-#calculate predicted probaviliites 
-pred <- as.data.frame(fitted(mod_drive_2))
-pred <- rename(pred, "prob" = "fitted(mod_drive_2)")
-pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
-#append to original df
-trips_person_hh$binary <- pred$binary
-head(trips_person_hh)
-       
-(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$drove_work == 0  #92%: removing the extra variables did almost nothing
-  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
-
-
-#collinearity 
-vif(mod_drive_2) #all good - all under 2
-
-
-
-
+#take out some outliers
+trips_person_hh <-trips_person_hh[which(trips_person_hh$AGE %in% 1:110),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$TRPDUR %in% 0:400),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
 ```
 
-```{r fwd and bwd selection}
+Using vif(), we can see that the variance inflation factor for all variables is below 5, meaning the model does not suffer from too much collinearity.  
+
+```{r vif, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+vif(mod_drive)
+```
+
+To create the "leanest and meanest" model, we use forward and backward selection to select the variables which contribute statistically significantly to the model and lower its AIC.     
+```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #Backward Selection
-step(glm(drove_work ~ TRPDUR  + GEND + AGE + TOTVEH +  HHSIZE +   NOWRK, family = binomial, data = trips_person_hh), direction = "backward")
+step(glm(drove_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh), direction = "backward")
 
 #Forward Selection
-fullmod<-glm(drove_work ~ TRPDUR  + GEND + AGE + TOTVEH +  HHSIZE +   NOWRK, family = binomial, data = trips_person_hh)
+fullmod<-glm(drove_work ~ TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, family = binomial, data = trips_person_hh)
 
 intonly<-glm(drove_work ~ 1, family = binomial, data = trips_person_hh)
 
 step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
-
-
-
-
-#lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
-
-mod_drive_3 <- glm(drove_work ~ TOTVEH + NOWRK + TRPDUR + AGE + GEND, family = binomial, data = trips_person_hh)
-summary(mod_drive_3)
-
-
-#test fit
-qchisq(.95, df=2913) 
-
-
-exp(coef(mod_drive_3))
-100 * (exp(coef(mod_drive_3))-1)
 ```
 
-## Model 2: Walk/bike to work or not   
+Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + GEND (gender). After running the model, I remove gender because it is not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.     
+```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
+
+mod_drive_3 <- glm(drove_work ~ TOTVEH + NOWRK + TRPDUR + AGE + EDUC + RENT, family = binomial, data = trips_person_hh)
+summary(mod_drive_3)
+
+#test fit
+qchisq(.95, df=2918) 
+```
+
+Anova also tells us that the variables all contribute significantly, and add to the model's accuracy in the following order: total vehicles, no work, trip duration, age, education, and renters.      
+```{r anova, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#anova
+anova(mod_drive_3, test="Chisq") #anova tells us that the following are statistically significant contributions: Trip duration, gender, age, total vehicles, household size, no work 
+
+```  
+
+We also calculate the predicted probabilities using the model. Here, we set the cut off for driving to work as 0.5. The results tell us that our model predicts correctly 92% of the time. 
+```{r accuracy, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#calculate predicted probabilities 
+pred <- as.data.frame(fitted(mod_drive_3))
+pred <- rename(pred, "prob" = "fitted(mod_drive_3)")
+pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
+#append to original df
+trips_person_hh$binary <- pred$binary
+       
+(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$drove_work == 0  #92%: not bad
+  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
+
+
+```
+
+
+
+## Model 2: Walk or Bike to Work   
+Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant. 
 ```{r walk bike}
 mod_bike <- glm ( bike_walk_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
 summary(mod_bike)
+```
 
 
 
