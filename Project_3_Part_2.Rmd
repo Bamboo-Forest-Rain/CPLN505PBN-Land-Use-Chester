@@ -2,7 +2,16 @@
 title: "CPLN505-Assignment 3 Part 2: Mode Choice Modelling"
 author: "Yihong Hu & Anna Duan"
 date: "4/14/2022"
-output: html_document
+output:
+  html_document:
+    keep_md: yes
+    toc: yes
+    theme: cosmo
+    toc_float: yes
+    code_folding: hide
+    number_sections: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -204,7 +213,6 @@ trips_person_hh$binary <- pred$binary
 
 
 
-
 ## Model 2: Walk or Bike to Work   
 Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant, and the AIC is 915.  
 ```{r walk bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
@@ -234,7 +242,7 @@ Forward and backward selection outputs the list of variables that give the model
 ```{r fwd bkwd selection bike 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
 
-mod_bike_3 <- glm(drove_work ~ TRPDUR + AGE + TOTVEH + RENT + NOWRK + EDUC, family = binomial, data = trips_person_hh)
+mod_bike_3 <- glm(bike_walk_work ~ TRPDUR + AGE + TOTVEH + RENT + NOWRK + EDUC, family = binomial, data = trips_person_hh)
 summary(mod_bike_3)
 
 #test fit
@@ -256,16 +264,42 @@ pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
 #append to original df
 trips_person_hh$binary <- pred$binary
        
-(sum(trips_person_hh$bike_walk_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$bike_walk_work == 0  #92%: not bad
+(sum(trips_person_hh$bike_walk_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$bike_walk_work == 0  
   & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
-
-
 ```
 
-## Binary Logit Conclusion and Plots  
+## Binary Logit Conclusion and Plots      
+For the drive to work model, the results tell us that the following factors are the most influential in determining whether somebody drives to work:      
+  
+1. Total vehicles in household     
+3. Trip duration  
+4. Commuter age    
+5. Whether someone is in school    
+6. Whether someone rents or owns their home   
+
+For our walk and bike to work model, the following variables are the most significant:     
+  
+1. Trip duration  
+2. Commuter Age  
+3. Total vehicles in the household  
+4. Whether someone rents or owns their home  
+5. Number of workers in the home  
+6. Whether someone is in school  
+
+These results offer us several important takeaways:  
+   
+1. The more vehicles someone has in their household, the more likely they are to drive and less likely they are to walk or bike. This may be due solely to the fact that someone with access to more cars is less likely to have to compete with another household member for a vehicle. However, it could also reflect the fact that people living in the suburbs tend to have more cars and lower access to other modes such as transit or walking.      
+  
+2. More workers in a household means a person is less likely to drive, and more likely to bike or walk to work. This supports the theory that mode choice is determined, in part, with whether one has to compete with household members for transportation resources.     
+  
+3. Trip duration is a predictor for mode because on average, a car commute takes 4 minutes longer than a bike or walking commute. It's possible that this is because people are unlikely to choose biking or walking, more labor intensive modes, for longer commutes.    
+  
+4. The older someone is, the more likely they are to drive instead of walk or bike. This is expected, as the literature has documented that older populations in the United States tend to prefer automobile transport over other modes.      
+  
+Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips.  
 
 
-## Model 3: Drive to work, carpool, transit, walk, or bike  
+## Multinomial Logit: drive, carpool, transit, walk, or bike to work  
 
 ```{r drive carpool transit walk or bike}
 ```
