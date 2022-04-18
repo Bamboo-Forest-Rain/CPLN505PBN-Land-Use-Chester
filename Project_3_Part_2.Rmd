@@ -134,6 +134,7 @@ trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
 
 ```
 
+# Binary Logit: Driving, Biking, and Walking to Work   
 ## Model 1: Drive to Work       
 First, we test a model using the maximum number of variables, just as a baseline. This model includes trip duration, gender, age, disability, education, total vehicles in a household, adults in household, rent or not, whether they speak English, household size, number of phones in the household, income, and whether a household has working adults. The AIC is 1493, with just about half of the variables marked as statistically significant.   
 ```{r modelling, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
@@ -199,6 +200,11 @@ trips_person_hh$binary <- pred$binary
 
 ```
 
+
+
+
+
+
 ## Model 2: Walk or Bike to Work   
 Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant, and the AIC is 915.  
 ```{r walk bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
@@ -241,7 +247,7 @@ Anova also tells us that the variables all contribute significantly, and add to 
 anova(mod_bike_3, test="Chisq") 
 ```  
 
-We also calculate the predicted probabilities using the model. Here, we set the cut off for biking or walking to work as 0.5. The results tell us that our model predicts correctly 6.5% of the time.  
+We also calculate the predicted probabilities using the model. Here, we set the cut off for biking or walking to work as 0.5. Unfortunately, our model predicts correctly just 6.5% of the time.   
 ```{r accuracy bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #calculate predicted probabilities 
 pred <- as.data.frame(fitted(mod_bike_3))
@@ -256,30 +262,8 @@ trips_person_hh$binary <- pred$binary
 
 ```
 
+## Binary Logit Conclusion and Plots  
 
-
-```{r bike select vars, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
-pred <- as.data.frame(fitted(mod_bike))
-pred <- rename(pred, "prob" = "fitted(mod_bike)")
-pred <- mutate(pred, "binary_b" = ifelse(prob < 0.5, 0, 1))
-#append to original df
-trips_person_hh$binary_b <- pred$binary_b
-head(trips_person_hh)
-       
-(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary_b == 1) + sum(trips_person_hh$drove_work == 0  #9.7%%: yikes
-  & trips_person_hh$binary_b == 0)) / nrow(trips_person_hh)
-
-
-
-
-#anova
-anova(mod_bike, test="Chisq") #anova tells us that the following are statistically significant contributions: Trip duration, gender, age, total vehicles, household size, no work 
-
-
-vif(mod_bike_2) #very good
-
-
-```
 
 ## Model 3: Drive to work, carpool, transit, walk, or bike  
 
