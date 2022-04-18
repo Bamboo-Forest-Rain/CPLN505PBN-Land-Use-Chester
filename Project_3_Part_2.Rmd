@@ -167,7 +167,7 @@ step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
 ```
 
 Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + GEND (gender). After running the model, I remove gender because it is not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.     
-```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+```{r fwd bkwd selection 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
 
 mod_drive_3 <- glm(drove_work ~ TOTVEH + NOWRK + TRPDUR + AGE + EDUC + RENT, family = binomial, data = trips_person_hh)
@@ -224,16 +224,39 @@ intonly<-glm(bike_walk_work ~ 1, family = binomial, data = trips_person_hh)
 step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
 ```
 
-Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + DISAB (disability) + INCOME. After running the model, I remove NPHON, INCOME, and DISAB because they are not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.     
-```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + DISAB (disability) + INCOME. After running the model, I remove NPHON, INCOME, and DISAB because they are not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.       
+```{r fwd bkwd selection bike 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
 
-mod_bike_3 <- glm(drove_work ~ TRPDUR + AGE + TOTVEH + RENT + NPHON + INCOME + NOWRK + EDUC + DISAB, family = binomial, data = trips_person_hh)
+mod_bike_3 <- glm(drove_work ~ TRPDUR + AGE + TOTVEH + RENT + NOWRK + EDUC, family = binomial, data = trips_person_hh)
 summary(mod_bike_3)
 
 #test fit
 qchisq(.95, df=2918) 
 ```
+
+Anova also tells us that the variables all contribute significantly, and add to the model's accuracy in the following order: trip duration, age, total vehicles, rent, no work, education.   
+```{r anova bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#anova
+anova(mod_bike_3, test="Chisq") 
+```  
+
+We also calculate the predicted probabilities using the model. Here, we set the cut off for biking or walking to work as 0.5. The results tell us that our model predicts correctly 6.5% of the time.  
+```{r accuracy bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#calculate predicted probabilities 
+pred <- as.data.frame(fitted(mod_bike_3))
+pred <- rename(pred, "prob" = "fitted(mod_bike_3)")
+pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
+#append to original df
+trips_person_hh$binary <- pred$binary
+       
+(sum(trips_person_hh$bike_walk_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$bike_walk_work == 0  #92%: not bad
+  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
+
+
+```
+
+
 
 ```{r bike select vars, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 pred <- as.data.frame(fitted(mod_bike))
