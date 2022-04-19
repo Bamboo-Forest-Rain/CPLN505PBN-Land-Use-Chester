@@ -66,7 +66,7 @@ In this report, we model the following using trip data from the Delaware Valley 
 ```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 # Read Chester land use Data and its geometry
-trips <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
+trips <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
  # filter(ACT1 == 11 | ACT1 ==12) %>% #filter for work trips
   mutate(drove_work = ifelse(TRAN1 == 21, 1, 0),
          bike_walk_work = ifelse(TRAN1 == 11 | TRAN1 == 14, 1, 0),
@@ -77,10 +77,10 @@ trips <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/
 
 
 
-households <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/hh_pub_CSV.csv", header = TRUE) %>%
+households <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/hh_pub_CSV.csv", header = TRUE) %>%
   dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
 
-persons <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/per_pub.csv") %>%
+persons <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/per_pub.csv") %>%
   dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
 ```
 
