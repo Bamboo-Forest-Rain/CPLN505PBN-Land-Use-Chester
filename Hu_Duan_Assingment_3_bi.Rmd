@@ -30,29 +30,6 @@ library(car)
 library(DescTools)
 library(LogisticDx)
 library(mlogit)
-
-plotTheme <- function(base_size = 12) {
-  theme(
-    text = element_text( color = "black"),
-    plot.title = element_text(size = 14,colour = "black"),
-    plot.subtitle = element_text(face="italic"),
-    plot.caption = element_text(hjust=0),
-    axis.ticks = element_blank(),
-    panel.background = element_blank(),
-    panel.grid.major = element_line("grey80", size = 0.1),
-    panel.grid.minor = element_blank(),
-    panel.border = element_rect(colour = "white", fill=NA, size=2),
-    strip.background = element_rect(fill = "grey80", color = "white"),
-    strip.text = element_text(size=12),
-    axis.title = element_text(size=12),
-    axis.text = element_text(size=10),
-    plot.background = element_blank(),
-    legend.background = element_blank(),
-    legend.title = element_text(colour = "black", face = "italic"),
-    legend.text = element_text(colour = "black", face = "italic"),
-    strip.text.x = element_text(size = 14)
-  )
-}
 ```
 
 # Introduction
@@ -61,19 +38,18 @@ In this report, we will develop a binary model to predict the possibility of lan
 (1) What are the main factors that determine a location to change from non-urban to urban in Chester County.
 (2) What are the possibility for specific locations for land-use change in Chester County 
 
-```{r Load Data}
+```{r Load Data,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 # Read Chester land use Data and its geometry
 Chester_L <- read.csv("Chester_Urban_Growth.csv") 
 Chester_L_geo <-
   Chester_L%>%
   st_as_sf(coords=c("X","Y"),crs = "EPSG:25832")
 
-head(Chester_L)
 ```
 
 # Summary Statistics 
 
-```{r Chester Summary Statistics, echo=FALSE}
+```{r Chester Summary Statistics, echo=FALSE,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #Retrieve Numeric Data
 Chester_Numeric <-
   Chester_L %>%
@@ -88,7 +64,7 @@ summary(Chester_Numeric) %>% kable() %>% kable_styling(bootstrap_options = "stri
 
 We first created a column that indicates the land-use change from non-urban to urban between 1992 and 2002. If the change occurred, it will be marked as "1" in the new column, otherwise it will be marked as "0".
 
-```{r Binary}
+```{r Binary,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 #Find urban land use change between 1992 and 2001
 Chester_L <-
   Chester_L %>%
@@ -102,7 +78,7 @@ Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
 # Build Binomial Logit Model 
 
 First, we cleaned the dataset. We changed the some zeros to "NA", so the regression can bypass them.  
-```{r Clearning Dataset}
+```{r Clearning Dataset, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 Chester_L_clean <- Chester_L %>%
   select(DIST_WATER,DIST_RAILS, DIST_REGRA, DIST_PASSR, DIST_4LNE_, DIST_INTER, DIST_PARKS)
@@ -115,8 +91,6 @@ Chester_Clean_2 <- Chester_L %>%
 Chester_L_Final <-
   cbind(Chester_L_clean, Chester_Clean_2)
 
-head(Chester_L)
-
 bi_model <-
   glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L_Final)
 
@@ -126,7 +100,7 @@ summary(bi_model)
 
 The AIC is shown to be 1451 with very few significant variables. We then used backward and forward selection methods to give a list of the most relevant variables. Some variables returned NA in the model, which means they are co-linear with other variables. We removed these variables.
 
-```{r}
+```{r message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #Remove "Park", "Water", "College" variables in the regression.
 bi_model <-
   glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
@@ -136,13 +110,13 @@ summary(bi_model)
 
 The variance inflation factors (VIF) is calculated to test the co-linearity of the variables. 
 
-```{r}
+```{r,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 vif(bi_model)
 ```
 
 A general rule of thumb is to not use any variables that return VIFs greater than 5 in a regression model. We thus removed DIST_RAILS, DIST_REGRA, DIST_INTER from the set. 
 
-```{r new model}
+```{r new model,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 bi_model2 <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
 
@@ -152,7 +126,7 @@ summary(bi_model2)
 
 We used backward and forward selections are used to select variables that give the best results.
 
-```{r}
+```{r,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #Backward Selection
 step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final)), direction = "backward")
 
@@ -167,7 +141,7 @@ step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
 
 The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so there are less observations. 
 
-```{r new model 2}
+```{r new model 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE,}
 
 bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + RAILSTN100 + CITBORO_10 + 
 POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
@@ -188,13 +162,13 @@ summary(bi_model3)
 
 From the model summary above, we know that the degree freedom is 5493. We calculated the model fitness using ChiSq. 
 
-```{r Chisq}
+```{r Chisq, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 qchisq(.95, df=5493) 
 ```
 
 The critical value is 5666.533. The null deviance value of the model (1763.5) is much lower than the critical value, meaning our predicted results will have no significant difference from the observations.
 
-```{r test for fiteness}
+```{r test for fiteness, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 model3_fitness <- gof(bi_model3, plotROC = FALSE)
 
 model3_fitness$gof
@@ -202,7 +176,7 @@ model3_fitness$gof
 
 # Model Results and Fitness
 
-```{r}
+```{r, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 exp(coef(bi_model3))
 100 * (exp(coef(bi_model3))-1)
 ```
@@ -223,7 +197,7 @@ If a location is within 1000 meters of another city or boro, the chance of being
 
 The statistic summary shows that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
 
-```{r distribution}
+```{r distribution, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 Chester_Numeric %>%
   gather(Variable, Value) %>%
   ggplot(aes(Value)) + 
@@ -238,8 +212,7 @@ Most of the data are highly skewed. We created some dummy variables to adjust th
 
 The thresholds for the new binary variables are based on their median value in the dataset. 
 
-```{r log transform}
-str(Chester_Numeric)
+```{r dummy, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 summary(Chester_Numeric)
 
 # REGRAIL300 + CITBORO_10 + 
@@ -254,16 +227,13 @@ Chester_bi <-
          bi_SFHOME = case_when(PCT_SFHOME < 86 ~ 1, TRUE ~ 0))
 ```
 
-```{r log model}
-
-head(Chester_log)
+```{r dummy model, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 #Replace log infinite with NA
 Chester_bi <- do.call(data.frame,                      
                lapply(Chester_bi,
               function(x) replace(x, is.infinite(x), NA)))
 
-str(Chester_bi)
 #Model
 bi_model_bi <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
 bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi))
@@ -274,7 +244,7 @@ summary(bi_model_bi)
 
 Just by creating dummy variables, even before variable selection, the model's AIC is reduced by 200. Some of the variables are co-linear with each other, we removed them from the final model.
 
-```{r log Variable Selection}
+```{r Variable Selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 #Backward Selection Log
 
@@ -299,7 +269,7 @@ CHNG_URB ~ REGRAIL300 + CITBORO_10 + bi_POPDEN_less60 + bi_WHITE_less97 + bi_SFH
 
 The forward and backward selection methods gave the same set of the most relevant variables for determining probability of urbanization. 
 
-```{r model with selected variables}
+```{r model with selected variables, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 bi_model_bi2 <- glm(formula = CHNG_URB ~ DIST_4LNE_ + DIST_REGRA + bi_POPDEN_less60 +  CITBORO_10 + DIST_PASSR + bi_POV_less4 + bi_WHITE_less97 + bi_SFHOME + DIST_PARKS + PCT_HSB_19 + SLOPE + REGRAIL300, family = binomial, data = na.omit(Chester_bi))
 
@@ -310,7 +280,7 @@ vif(bi_model_bi2)
 
 The AIC is 1408 of the final model and the VIF is all well below 5, meaning there are no co-linear variables.
 
-```{r goodness of fit log}
+```{r goodness of fit, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 qchisq(.95, df=5493)
 ```
 
@@ -318,7 +288,7 @@ The critical value is 5666.5. The null deviance value of the model (1763) is muc
 
 *The model with more binary variables is more reliable to predict the results.*
 
-```{r}
+```{r, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 exp(coef(bi_model_bi2))
 100 * (exp(coef(bi_model_bi2))-1)
 ```
@@ -344,7 +314,7 @@ Some additional data could be gathered, such as the population density, househol
 
 # Conclusion with Plots and Tables 
 
-```{r variables against Slope}
+```{r variables against Slope ,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 #Holding everything else constant, but percent poverty 
 
 ## 0 in household poverty below 4%
@@ -411,7 +381,7 @@ The blue curve is higher than the green curve in the graph. This shows that whet
 
 The graph also shows as the percent slope increases, the predicted probably of urbanization decreases as well. 
 
-```{r variables against Slope}
+```{r variables against Slope, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 #Holding everything else constant, but percent poverty 
 
 ## 0 in white
