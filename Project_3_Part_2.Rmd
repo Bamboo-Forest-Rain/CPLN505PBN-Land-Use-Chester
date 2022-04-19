@@ -67,7 +67,11 @@ In this report, we model the following using trip data from the Delaware Valley 
 ```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 # Read Chester land use Data and its geometry
+<<<<<<< HEAD
 trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
+=======
+trips <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
+>>>>>>> b62ad5b292b225262c2a0b88174adf5d70977c84
  # filter(ACT1 == 11 | ACT1 ==12) %>% #filter for work trips
   mutate(drove_work = ifelse(TRAN1 == 21, 1, 0),
          bike_walk_work = ifelse(TRAN1 == 11 | TRAN1 == 14, 1, 0),
@@ -76,10 +80,19 @@ trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
 # %>%
 #   dplyr::select(-DVRPC, -SPDFLAG, -OEGRES, -EGRESS, -EXIT, -OTRFS, -FARE3, -PAY3O, -PAY3, -TRFL2, -TRFS2, -FARE2, -PAY2O, -PAY2, -TRFL1, -TRFS1, -TRFR, -FARE1, -PAY1O, -PAY1, -LINE, -OACESS, -ACCESS, -SUBTR, -APDPN, -APDPH, -ADDPN, -ADDPH, -ADDP, -TOLLA, -TOLL, -PRKUO, -NNHTR, -PHHTR, -ADP, -HHVU, -OTRAN, -PLANO, -X, -ACT2, -ACT3, -ACT4, -ACT5, -ACT6, -ACT1O, -ACTO, -TRAN4, -TRAN3, -PARKO, -APDP, -X.1, -TRAN1, -TRAN2)
 
+<<<<<<< HEAD
 households <- read.csv("HH Travel Survey/hh_pub_CSV.csv", header = TRUE) %>%
   dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
 
 persons <- read.csv("HH\ Travel\ Survey/per_pub.csv") %>%
+=======
+
+
+households <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/hh_pub_CSV.csv", header = TRUE) %>%
+  dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
+
+persons <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/per_pub.csv") %>%
+>>>>>>> b62ad5b292b225262c2a0b88174adf5d70977c84
   dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
 ```
 
