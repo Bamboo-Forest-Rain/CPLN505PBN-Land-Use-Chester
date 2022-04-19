@@ -2,7 +2,16 @@
 title: "CPLN505-Assignment 3"
 author: "Yihong Hu & Anna Duan"
 date: "4/7/2022"
-output: html_document
+output:
+  html_document:
+    keep_md: yes
+    toc: yes
+    theme: cosmo
+    toc_float: yes
+    code_folding: hide
+    number_sections: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -20,9 +29,37 @@ library(FNN)
 library(car)
 library(DescTools)
 library(LogisticDx)
+library(mlogit)
+
+plotTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 14,colour = "black"),
+    plot.subtitle = element_text(face="italic"),
+    plot.caption = element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line("grey80", size = 0.1),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "white", fill=NA, size=2),
+    strip.background = element_rect(fill = "grey80", color = "white"),
+    strip.text = element_text(size=12),
+    axis.title = element_text(size=12),
+    axis.text = element_text(size=10),
+    plot.background = element_blank(),
+    legend.background = element_blank(),
+    legend.title = element_text(colour = "black", face = "italic"),
+    legend.text = element_text(colour = "black", face = "italic"),
+    strip.text.x = element_text(size = 14)
+  )
+}
 ```
 
 # Introduction
+
+In this report, we will develop a binary model to predict the possibility of land-use change in Chester County, PA. We want to know:
+(1) What are the main factors that determine a location to change from non-urban to urban in Chester County.
+(2) What are the possibility for specific locations for land-use change in Chester County 
 
 ```{r Load Data}
 # Read Chester land use Data and its geometry
@@ -34,7 +71,7 @@ Chester_L_geo <-
 head(Chester_L)
 ```
 
-## 1. Summary Statistics 
+# Summary Statistics 
 
 ```{r Chester Summary Statistics, echo=FALSE}
 #Retrieve Numeric Data
@@ -47,9 +84,9 @@ Chester_Numeric <-
 summary(Chester_Numeric) %>% kable() %>% kable_styling(bootstrap_options = "striped", full_width = T, position = "left", fixed_thead = T)
 ```
 
-## 2. Binary Variables
+# Binary Variables
 
-A column indicating land that has changed to urban land between 1992 to 2001 is created.
+We first created a column that indicates the land-use change from non-urban to urban between 1992 and 2002. If the change occurred, it will be marked as "1" in the new column, otherwise it will be marked as "0".
 
 ```{r Binary}
 #Find urban land use change between 1992 and 2001
@@ -62,10 +99,9 @@ Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
 
 ```
 
-## 3. Build Binomial Model 
+# Build Binomial Logit Model 
 
-First, the dataset needs cleaning. There are some zeros in columns with continuous values, these should be changed to NA so the regression can bypass them.  
-
+First, we cleaned the dataset. We changed the some zeros to "NA", so the regression can bypass them.  
 ```{r Clearning Dataset}
 
 Chester_L_clean <- Chester_L %>%
@@ -88,7 +124,7 @@ summary(bi_model)
 
 ```
 
-The AIC is shown to be 1451 with very few significant variables. A backward and forward selection methods are used to give a list of the most related variables. Some variables returned NA in the model, which means they are co-linear with other variables. These variables should be removed. 
+The AIC is shown to be 1451 with very few significant variables. We then used backward and forward selection methods to give a list of the most relevant variables. Some variables returned NA in the model, which means they are co-linear with other variables. We removed these variables.
 
 ```{r}
 #Remove "Park", "Water", "College" variables in the regression.
@@ -104,7 +140,7 @@ The variance inflation factors (VIF) is calculated to test the co-linearity of t
 vif(bi_model)
 ```
 
-A general rule of thumb is when a variable's VIF is greater than 5, the variable cannot be used in the regression. DIST_RAILS, DIST_REGRA, DIST_INTER should be removed from the set. 
+A general rule of thumb is to not use any variables that return VIFs greater than 5 in a regression model. We thus removed DIST_RAILS, DIST_REGRA, DIST_INTER from the set. 
 
 ```{r new model}
 
@@ -113,7 +149,8 @@ bi_model2 <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + 
 summary(bi_model2)
 
 ```
-Backward and Forward selections are used to select variables that will give the best results.
+
+We used backward and forward selections are used to select variables that give the best results.
 
 ```{r}
 #Backward Selection
@@ -128,7 +165,7 @@ step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
 
 ```
 
-The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so the observations are less. 
+The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so there are less observations. 
 
 ```{r new model 2}
 
@@ -147,9 +184,9 @@ DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.
 summary(bi_model3)
 ```
 
-## Test the fitness of model
+# Test the fitness of model
 
-From the above model summary, we know that the degree freedom is 5493. ChiSq method to determine the fitness
+From the model summary above, we know that the degree freedom is 5493. We calculated the model fitness using ChiSq. 
 
 ```{r Chisq}
 qchisq(.95, df=5493) 
@@ -158,23 +195,19 @@ qchisq(.95, df=5493)
 The critical value is 5666.533. The null deviance value of the model (1763.5) is much lower than the critical value, meaning our predicted results will have no significant difference from the observations.
 
 ```{r test for fiteness}
-PseudoR2(
-  bi_model3, 
-  which = c("McFadden", "CoxSnell", "Nagelkerke", "Tjur")
-)
 model3_fitness <- gof(bi_model3, plotROC = FALSE)
 
-model3_fitness$gof5
+model3_fitness$gof
 ```
 
-4. Model Results and Fitness
+# Model Results and Fitness
 
 ```{r}
 exp(coef(bi_model3))
 100 * (exp(coef(bi_model3))-1)
 ```
 
-Several goodness of fit tests, suggest that the model's predicted results are in the reasonable range similar to that of the original data. 
+Several goodness of fit tests, suggest that the model's predicted results are in the reasonable range similar to that of the original data (with the p-values greater than 5%).
 
 According to the model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location is within 300 meters of a SPETA regional rail line, 2) if the location is within 1,000 meters of a city or boro, 3) the location's percent of households living below poverty line in 1990, and 4) the location's percent of white households. These three factors have the largest impact on the possibility of a location being urbanized. 
 
@@ -188,7 +221,7 @@ If a location is within 1000 meters of another city or boro, the chance of being
 
 ## Model Improvement
 
-The statistic summary showed that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
+The statistic summary shows that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
 
 ```{r distribution}
 Chester_Numeric %>%
@@ -201,7 +234,7 @@ Chester_Numeric %>%
 
 ```
 
-Most of the data are highly skewed. In this case, making these variables a binary variable is worth to look into. 
+Most of the data are highly skewed. We created some dummy variables to adjust the dataset. 
 
 The thresholds for the new binary variables are based on their median value in the dataset. 
 
@@ -239,7 +272,7 @@ summary(bi_model_bi)
 
 ```
 
-Just by log transforming, even without variable selection, the model has a reduced AIC by 200. Some of the variables are co-linear which is other, so they should be removed from the final model.
+Just by creating dummy variables, even before variable selection, the model's AIC is reduced by 200. Some of the variables are co-linear with each other, we removed them from the final model.
 
 ```{r log Variable Selection}
 
@@ -264,7 +297,7 @@ CHNG_URB ~ REGRAIL300 + CITBORO_10 + bi_POPDEN_less60 + bi_WHITE_less97 + bi_SFH
   DIST_REGRA + PCT_HSB_19 + SLOPE
 ```
 
-The forward and backward selection methods give the same set of the most impact variables for determining probability of urbanization. 
+The forward and backward selection methods gave the same set of the most relevant variables for determining probability of urbanization. 
 
 ```{r model with selected variables}
 
@@ -274,11 +307,13 @@ summary(bi_model_bi2)
 
 vif(bi_model_bi2)
 ```
+
 The AIC is 1408 of the final model and the VIF is all well below 5, meaning there are no co-linear variables.
 
 ```{r goodness of fit log}
 qchisq(.95, df=5493)
 ```
+
 The critical value is 5666.5. The null deviance value of the model (1763) is much lower than the critical value, meaning our predicted results will be in a similar range as the observations. 
 
 *The model with more binary variables is more reliable to predict the results.*
@@ -287,6 +322,7 @@ The critical value is 5666.5. The null deviance value of the model (1763) is muc
 exp(coef(bi_model_bi2))
 100 * (exp(coef(bi_model_bi2))-1)
 ```
+
 According to the new model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least:   
 1) if the location has an household poverty below 4%   
 2)if the location has an white population below 97%   
@@ -304,9 +340,9 @@ If a location is within 1000 meters of another city or boro, the chance of being
 
 ## Other suggestions
 
-Some additional newer data could be gathered, such as the population density, household income, and median housing value from 2000 census.  The growth rates of demographics and economics could be another huge factor for urbanization. These could be more relevant variables to determine probability of land use. 
+Some additional data could be gathered, such as the population density, household income, and median housing value from 2000 census.  The demographic and economic growth rates could be another huge factor for urbanization. These could be more relevant variables to determine probability of land use. 
 
-# Plots and Tables
+# Conclusion with Plots and Tables 
 
 ```{r variables against Slope}
 #Holding everything else constant, but percent poverty 

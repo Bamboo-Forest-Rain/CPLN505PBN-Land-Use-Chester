@@ -62,11 +62,12 @@ plotTheme <- function(base_size = 12) {
 In this report, we model the following using trip data from the Delaware Valley Regional Planning Commission:        
 1. Whether a commuter drove to work      
 2. Whether a commuter walked or biked to work    
-3. Whether a commuter drove to work, carpooled, took public transit, or walked or biked          
+3. Whether a commuter drove to work, carpooled, took public transit, or walked or biked
+
 ```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 # Read Chester land use Data and its geometry
-trips <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
+trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
  # filter(ACT1 == 11 | ACT1 ==12) %>% #filter for work trips
   mutate(drove_work = ifelse(TRAN1 == 21, 1, 0),
          bike_walk_work = ifelse(TRAN1 == 11 | TRAN1 == 14, 1, 0),
@@ -75,16 +76,15 @@ trips <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/
 # %>%
 #   dplyr::select(-DVRPC, -SPDFLAG, -OEGRES, -EGRESS, -EXIT, -OTRFS, -FARE3, -PAY3O, -PAY3, -TRFL2, -TRFS2, -FARE2, -PAY2O, -PAY2, -TRFL1, -TRFS1, -TRFR, -FARE1, -PAY1O, -PAY1, -LINE, -OACESS, -ACCESS, -SUBTR, -APDPN, -APDPH, -ADDPN, -ADDPH, -ADDP, -TOLLA, -TOLL, -PRKUO, -NNHTR, -PHHTR, -ADP, -HHVU, -OTRAN, -PLANO, -X, -ACT2, -ACT3, -ACT4, -ACT5, -ACT6, -ACT1O, -ACTO, -TRAN4, -TRAN3, -PARKO, -APDP, -X.1, -TRAN1, -TRAN2)
 
-
-
-households <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/hh_pub_CSV.csv", header = TRUE) %>%
+households <- read.csv("HH Travel Survey/hh_pub_CSV.csv", header = TRUE) %>%
   dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
 
-persons <- read.csv("/Users/annaduan/Documents/GitHub/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/per_pub.csv") %>%
+persons <- read.csv("HH\ Travel\ Survey/per_pub.csv") %>%
   dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
 ```
 
 First, we clean the data and merge three datasets capturing participants' trip, household, and demographic attributes. We clean out NAs, and filter the data to make sure the values are all in the correct ranges.  
+
 ```{r clean Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 trips$drove_work[which(is.na(trips$drove_work))]<-0
@@ -99,7 +99,6 @@ trips$Commute[trips$drove_work == 1] <- 1
 trips$Commute[trips$bike_walk_work == 1] <- 2
 trips$Commute[trips$transit_work == 1] <- 3
 trips$Commute[trips$carpool_work == 1] <- 4
-
 
 
 trips$SAMPN_PER <- do.call(paste, c(trips[c("SAMPN", "PERNO")], sep = ""))
@@ -173,6 +172,7 @@ trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
 # Binary Logit: Driving, Biking, and Walking to Work   
 ## Model 1: Drive to Work       
 First, we test a model using the maximum number of variables, just as a baseline. This model includes trip duration, gender, age, disability, education, total vehicles in a household, adults in household, rent or not, whether they speak English, household size, number of phones in the household, income, and whether a household has working adults. The AIC is 1493, with just about half of the variables marked as statistically significant.   
+
 ```{r modelling, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 mod_drive <- glm ( drove_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
@@ -431,4 +431,26 @@ ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) +
 ## Multinomial Logit: drive, carpool, transit, walk, or bike to work  
 
 ```{r drive carpool transit walk or bike}
+#Create a new "mode" column
+trips_person_hh_multi <-
+  trips_person_hh %>%
+mutate(mode2 = case_when(Mode == 21 ~ "driving",
+                            Mode == 11 ~ "walk_bike",
+                            Mode == 41 | Mode == 44 | Mode == 47 | Mode == 51 | Mode == 53| Mode == 52 ~ "transit"))
+
+trips_multi_data <- trips_person_hh_multi %>%
+  select("TRPDUR",'GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE',mode2)
+
+TM <- mlogit.data (trips_multi_data, choice="mode2",
+                   shape="wide",
+                    drop.index=TRUE)
+
+head(trips_multi_data)
+                    
+#Crate first multi-nomial logit
+lapply(trips_multi_data[c('GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE')], unique)
+
+ml.trips <- mlogit ( mode2 ~ 1|TRPDUR + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT  + HHSIZE + NPHON + INCOME + NOWRK, TM)
+
+summary(ml.trips)
 ```
