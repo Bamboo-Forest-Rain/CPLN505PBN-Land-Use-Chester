@@ -29,6 +29,33 @@ library(FNN)
 library(car)
 library(DescTools)
 library(LogisticDx)
+library(gridExtra)
+
+
+plotTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 14,colour = "black"),
+    plot.subtitle = element_text(face="italic"),
+    plot.caption = element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line("grey80", size = 0.1),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "white", fill=NA, size=2),
+    strip.background = element_rect(fill = "grey80", color = "white"),
+    strip.text = element_text(size=12),
+    axis.title = element_text(size=12),
+    axis.text = element_text(size=10),
+    plot.background = element_blank(),
+    legend.background = element_blank(),
+    legend.title = element_text(colour = "black", face = "italic"),
+    legend.text = element_text(colour = "black", face = "italic"),
+    strip.text.x = element_text(size = 14)
+  )
+}
+
+
 ```
 
 # Introduction    
@@ -296,7 +323,109 @@ These results offer us several important takeaways:
   
 4. The older someone is, the more likely they are to drive instead of walk or bike. This is expected, as the literature has documented that older populations in the United States tend to prefer automobile transport over other modes.      
   
-Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips.  
+Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips. 
+
+```{r car scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+mod <- glm ( drove_work ~ TOTVEH+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+mod2 <- glm ( bike_walk_work ~ TOTVEH+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+
+
+#Scenario 1: 1 vs 3 vehicles
+newdat_gg<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg$INCOME <- 50000
+newdat_gg$TOTVEH <- mean(trips_person_hh$TOTVEH)
+
+newdat_gg_1<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_1)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg_1$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_1$INCOME <- 50000
+newdat_gg_1$TOTVEH <- 1
+
+newdat_gg_2<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_2)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg_2$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_2$INCOME <- 50000
+newdat_gg_2$TOTVEH <- 4
+
+#drove
+pred_dat<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat)<- c("TRPDUR", "Pred_2.3Cars_Inc50K", "Pred_1Car_Inc50K", "Pred_4Cars_Inc50K")
+pred_dat$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat$Pred_2.3Cars_Inc50K<- predict(mod, newdat_gg, type="response")
+pred_dat$Pred_1Car_Inc50K<- predict(mod, newdat_gg_1, type="response")
+pred_dat$Pred_4Cars_Inc50K<- predict(mod, newdat_gg_2, type="response")
+#bike/walk
+pred_dat2<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat2)<- c("TRPDUR", "Pred_2.3Cars_Inc50K", "Pred_1Car_Inc50K", "Pred_4Cars_Inc50K")
+pred_dat2$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat2$Pred_2.3Cars_Inc50K<- predict(mod2, newdat_gg, type="response")
+pred_dat2$Pred_1Car_Inc50K<- predict(mod2, newdat_gg_1, type="response")
+pred_dat2$Pred_4Cars_Inc50K<- predict(mod2, newdat_gg_2, type="response")
+
+dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
+dat2 <- gather(pred_dat2, -TRPDUR, key = "Scenario", value = "value")
+
+grid.arrange(
+ggplot(dat, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Drive to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") +
+  plotTheme(),
+ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Bike/Walk to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability")+
+plotTheme(), ncol = 1, top = "3 Household Car Scenarios")
+```
+
+```{r age scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+mod <- glm ( drove_work ~ AGE+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+mod2 <- glm ( bike_walk_work ~ AGE+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+
+#Scenario 2: 20 vs 55 years of age
+newdat_gg<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg$INCOME <- 50000
+newdat_gg$AGE <- mean(trips_person_hh$AGE)
+
+newdat_gg_1<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_1)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg_1$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_1$INCOME <- 50000
+newdat_gg_1$AGE <- 25
+
+newdat_gg_2<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_2)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg_2$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_2$INCOME <- 50000
+newdat_gg_2$AGE <- 55
+
+#drove
+pred_dat<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat)<- c("TRPDUR", "Pred_44Years_Inc50K", "Pred_25Years_Inc50K", "Pred_55Years_Inc50K")
+pred_dat$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat$Pred_44Years_Inc50K<- predict(mod, newdat_gg, type="response")
+pred_dat$Pred_25Years_Inc50K<- predict(mod, newdat_gg_1, type="response")
+pred_dat$Pred_55Years_Inc50K<- predict(mod, newdat_gg_2, type="response")
+
+dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
+dat2 <- gather(pred_dat2, -TRPDUR, key = "Scenario", value = "value")
+
+grid.arrange(
+ggplot(dat, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Drive to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") + plotTheme() ,
+ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Bike/Walk to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") + plotTheme(), ncol = 1, top = "3 Age Scenarios")
+```
 
 
 ## Multinomial Logit: drive, carpool, transit, walk, or bike to work  
