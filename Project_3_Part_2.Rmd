@@ -68,20 +68,17 @@ In this report, we model the following using trip data from the Delaware Valley 
 ```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
 
 # Read Chester land use Data and its geometry
-<<<<<<< HEAD
+
 trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
-=======
-trips <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/trip_pub.csv") %>%
->>>>>>> b62ad5b292b225262c2a0b88174adf5d70977c84
  # filter(ACT1 == 11 | ACT1 ==12) %>% #filter for work trips
   mutate(drove_work = ifelse(TRAN1 == 21, 1, 0),
          bike_walk_work = ifelse(TRAN1 == 11 | TRAN1 == 14, 1, 0),
          transit_work = ifelse(TRAN1 == 41 | TRAN1 == 44 | TRAN1 == 47 | TRAN1 == 51 | TRAN1 == 52 | TRAN1 == 53, 1, 0),
-         carpool_work = ifelse(TRAN1 == 31, 1,0)) 
+         carpool_work = ifelse(TRAN1 == 31, 1,0),
+         )
 # %>%
 #   dplyr::select(-DVRPC, -SPDFLAG, -OEGRES, -EGRESS, -EXIT, -OTRFS, -FARE3, -PAY3O, -PAY3, -TRFL2, -TRFS2, -FARE2, -PAY2O, -PAY2, -TRFL1, -TRFS1, -TRFR, -FARE1, -PAY1O, -PAY1, -LINE, -OACESS, -ACCESS, -SUBTR, -APDPN, -APDPH, -ADDPN, -ADDPH, -ADDP, -TOLLA, -TOLL, -PRKUO, -NNHTR, -PHHTR, -ADP, -HHVU, -OTRAN, -PLANO, -X, -ACT2, -ACT3, -ACT4, -ACT5, -ACT6, -ACT1O, -ACTO, -TRAN4, -TRAN3, -PARKO, -APDP, -X.1, -TRAN1, -TRAN2)
 
-<<<<<<< HEAD
 households <- read.csv("HH Travel Survey/hh_pub_CSV.csv", header = TRUE) %>%
   dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
 
@@ -445,44 +442,101 @@ ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) +
 ## Multinomial Logit: drive, carpool, transit, walk, or bike to work  
 
 ```{r drive carpool transit walk or bike}
-#Create a new "mode" column
-trips_person_hh_multi <-
-  trips_person_hh %>%
-mutate(mode2 = case_when(Mode == 21 ~ "driving",
-                            Mode == 11 ~ "walk_bike",
-                            Mode == 41 | Mode == 44 | Mode == 47 | Mode == 51 | Mode == 53| Mode == 52 ~ "transit"))
+trips_person_hh <- trips_person_hh %>%
+  mutate(walk_work = case_when (TRAN1 == 11  ~ 1, TRUE ~ 0),
+         bike_work = case_when(TRAN1 == 14 ~ 1, TRUE ~ 0))
 
+CommuteTripsClean <- trips_person_hh[which(trips$Dest_PTYE == 2), ] 
 
-#Crate first multi-nomial logit
-trips_person_hh_multi$FARE1[is.na(trips_person_hh_multi$FARE1)] <- 0
-trips_person_hh_multi$FARE2[is.na(trips_person_hh_multi$FARE2)] <- 0
-trips_person_hh_multi$FARE3[is.na(trips_person_hh_multi$FARE3)] <- 0
-trips_person_hh_multi$PARKC[is.na(trips_person_hh_multi$PARKC)] <- 0
-trips_person_hh_multi$TOLLA[is.na(trips_person_hh_multi$TOLLA)] <- 0
-trips_person_hh_multi$TRFR[is.na(trips_person_hh_multi$TRFR)] <- 0
+#combine modes into a single column so that we can plot
+CommuteTripsClean$Commute[CommuteTripsClean$drove_work == 1] <- 1
+CommuteTripsClean$Commute[CommuteTripsClean$carpool_work == 1] <- 2
+CommuteTripsClean$Commute[CommuteTripsClean$transit_work == 1] <- 3
+CommuteTripsClean$Commute[CommuteTripsClean$walk_work == 1] <- 4
+CommuteTripsClean$Commute[CommuteTripsClean$bike_work == 1] <- 5
 
-#Column with total Fare
-trips_person_hh_multi <-
-  trips_person_hh_multi %>%
-  mutate(TotCost = FARE1 + FARE2 + FARE3 + TOLLA + PARKC)
+#are there NAs?
+table(is.na(CommuteTripsClean$Commute))
+table(CommuteTripsClean$Commute)
 
-trips_multi_data <- trips_person_hh_multi %>%
-  select("TRPDUR",'GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE', 'TotCost', 'TRFR', mode2)
+#plot frequency of each mode chosen
+hist(CommuteTripsClean$Commute)
 
+CommuteTripsClean <- subset(CommuteTripsClean, !duplicated(X))
 
-trips_multi_data %>%
-  select(-mode2) %>%
-  cor()%>%
-  ggcorrplot()
+CommuteTripsClean <-CommuteTripsClean %>% filter(!is.na(SAMPN_PER))
 
-TM <- mlogit.data (trips_multi_data, choice="mode2",
-                   shape="wide",
-                    drop.index=TRUE)
+#Check for repetition
+##Commute_mode <- CommuteTripsClean%>% select(transit_work, drove_work, bike_work, walk_work,carpool_work)
+##Commute_mode$check<-
+##Commute_mode$transit_work+Commute_mode$drove_work+Commute_mode$bike_work + Commute_mode$walk_work + Commute_mode$carpool_work
+##max(Commute_mode$check)
 
-ml.trips <- mlogit ( mode2 ~ TRPDUR + TotCost + TRFR | GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT  + HHSIZE + NPHON + INCOME + NOWRK, TM)
+Biking<-CommuteTripsClean[which(CommuteTripsClean$bike_work ==1),]
+Walking<-CommuteTripsClean[which(CommuteTripsClean$walk_work ==1),]
+Drive<-CommuteTripsClean[which(CommuteTripsClean$drove_work ==1),]
+Transit<-CommuteTripsClean[which(CommuteTripsClean$transit_work ==1),]
+Carpool <- CommuteTripsClean[which(CommuteTripsClean$carpool_work ==1),]
 
+Drive$distance<-(30/60)*Drive$TRPDUR
+Biking$distance<-(12/60)*Biking$TRPDUR
+Walking$distance<-(4/60)*Walking$TRPDUR
+Transit$distance<-(25/60)*Transit$TRPDUR
+Carpool$distance<-(30/60)*Carpool$TRPDUR
 
-summary(ml.trips)
+dat<-rbind(Biking, Walking, Transit, Carpool, Drive)
 
-?mlogit
+dat$time.drove <-dat$distance/30
+dat$time.bike <- dat$distance/12
+dat$time.transit <- dat$distance/25
+dat$time.carpool <- dat$distance/30
+dat$time.walk <- dat$distance/4
+
+dat$mode[dat$bike_work == 1] <- "bike"
+dat$mode[dat$transit_work == 1] <- "transit"
+dat$mode[dat$walk_work == 1] <- "walk"
+dat$mode[dat$drove_work == 1] <- "drove"
+dat$mode[dat$carpool_work == 1] <- "carpool"
+
+dat2 <- dat %>%
+  mutate(with_toll = case_when(TOLLA > 0 ~ 1, TRUE ~ 2),
+         with_park = case_when(PARKC > 0 ~ 1, TRUE ~ 2))
+  
+
+rownames(dat2) <- NULL 
 ```
+
+```{r}
+dat_final <-
+  dat2 %>%
+  select("SAMPN.x", "PERNO.x", "X", "AGE", "INCOME", "SAMPN_PER", "with_toll", "TOLL", "with_park", "PARKU","PARKO" ,"TRPDUR", "drove_work", "transit_work","carpool_work", GEND, DISAB, EDUC, TOTVEH, ADVLT, RENT, ENGL , HHSIZE, NPHON , NOWRK, starts_with("time"),mode)
+
+dat_final[is.na(dat_final)] <- 0
+
+head(dat_final)
+
+datMNL <- mlogit.data(dat_final, shape="wide", choice="mode", varying=c(26:30))
+
+head(datMNL)
+
+```
+
+We selected variables that are relevant across all modes (i.e. toll or parking are only related to driving, so we excluded them).
+
+```{r}
+#mod 1
+mod1 <- mlogit (mode ~ 1 | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
+
+summary(mod1)
+
+#mod 2 with time
+mod2 <-mlogit (mode ~ time | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
+summary(mod2)
+
+#mod 3 only with time
+mod3 <-mlogit (mode ~ time | 1, data = datMNL)
+summary(mod3)
+
+
+```
+
