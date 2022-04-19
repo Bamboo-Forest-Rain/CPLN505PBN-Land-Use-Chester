@@ -30,6 +30,7 @@ library(car)
 library(DescTools)
 library(LogisticDx)
 library(gridExtra)
+library(ggcorrplot)
 
 
 plotTheme <- function(base_size = 12) {
@@ -451,19 +452,37 @@ mutate(mode2 = case_when(Mode == 21 ~ "driving",
                             Mode == 11 ~ "walk_bike",
                             Mode == 41 | Mode == 44 | Mode == 47 | Mode == 51 | Mode == 53| Mode == 52 ~ "transit"))
 
+
+#Crate first multi-nomial logit
+trips_person_hh_multi$FARE1[is.na(trips_person_hh_multi$FARE1)] <- 0
+trips_person_hh_multi$FARE2[is.na(trips_person_hh_multi$FARE2)] <- 0
+trips_person_hh_multi$FARE3[is.na(trips_person_hh_multi$FARE3)] <- 0
+trips_person_hh_multi$PARKC[is.na(trips_person_hh_multi$PARKC)] <- 0
+trips_person_hh_multi$TOLLA[is.na(trips_person_hh_multi$TOLLA)] <- 0
+trips_person_hh_multi$TRFR[is.na(trips_person_hh_multi$TRFR)] <- 0
+
+#Column with total Fare
+trips_person_hh_multi <-
+  trips_person_hh_multi %>%
+  mutate(TotCost = FARE1 + FARE2 + FARE3 + TOLLA + PARKC)
+
 trips_multi_data <- trips_person_hh_multi %>%
-  select("TRPDUR",'GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE',mode2)
+  select("TRPDUR",'GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE', 'TotCost', 'TRFR', mode2)
+
+
+trips_multi_data %>%
+  select(-mode2) %>%
+  cor()%>%
+  ggcorrplot()
 
 TM <- mlogit.data (trips_multi_data, choice="mode2",
                    shape="wide",
                     drop.index=TRUE)
 
-head(trips_multi_data)
-                    
-#Crate first multi-nomial logit
-lapply(trips_multi_data[c('GEND', 'DISAB', 'EDUC','TOTVEH','ADVLT', 'RENT', 'ENGL', 'HHSIZE', 'NPHON', 'INCOME', 'NOWRK','AGE')], unique)
+ml.trips <- mlogit ( mode2 ~ TRPDUR + TotCost + TRFR | GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT  + HHSIZE + NPHON + INCOME + NOWRK, TM)
 
-ml.trips <- mlogit ( mode2 ~ 1|TRPDUR + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT  + HHSIZE + NPHON + INCOME + NOWRK, TM)
 
 summary(ml.trips)
+
+?mlogit
 ```
