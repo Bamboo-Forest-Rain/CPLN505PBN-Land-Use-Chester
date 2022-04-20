@@ -577,4 +577,14 @@ chisq.prob <- 1 - pchisq(modelChi, chidf)
 chisq.prob #this is the chisq p-value in the output
 ```
 
+```{r model summary MNL,  message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+summary(mod4)
 
+fitted(mod4, outcome = TRUE, 30)   #probability of choosing any of the 4 modes
+```
+
+
+# Conclusion  
+## Model results & plots/tables   
+## How well does your model predict observed mode choices? For which modes does it perform best? Worst? How do you know?  
+## Further variables for better future models?
