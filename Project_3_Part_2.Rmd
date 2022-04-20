@@ -82,15 +82,7 @@ trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
 households <- read.csv("HH Travel Survey/hh_pub_CSV.csv", header = TRUE) %>%
   dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
 
-persons <- read.csv("HH\ Travel\ Survey/per_pub.csv") %>%
-=======
-
-
-households <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/hh_pub_CSV.csv", header = TRUE) %>%
-  dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
-
-persons <- read.csv("/Users/annaduan/Documents/planning\ by\ numbers/3/CPLN505PBN-Land-Use-Chester/HH\ Travel\ Survey/per_pub.csv") %>%
->>>>>>> b62ad5b292b225262c2a0b88174adf5d70977c84
+persons <- read.csv("HH Travel Survey/per_pub.csv") %>%
   dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
 ```
 
@@ -326,15 +318,7 @@ For our walk and bike to work model, the following variables are the most signif
 
 These results offer us several important takeaways:  
    
-1. The more vehicles someone has in their household, the more likely they are to drive and less likely they are to walk or bike. This may be due solely to the fact that someone with access to more cars is less likely to have to compete with another household member for a vehicle. However, it could also reflect the fact that people living in the suburbs tend to have more cars and lower access to other modes such as transit or walking.      
-  
-2. More workers in a household means a person is less likely to drive, and more likely to bike or walk to work. This supports the theory that mode choice is determined, in part, with whether one has to compete with household members for transportation resources.     
-  
-3. Trip duration is a predictor for mode because on average, a car commute takes 4 minutes longer than a bike or walking commute. It's possible that this is because people are unlikely to choose biking or walking, more labor intensive modes, for longer commutes.    
-  
-4. The older someone is, the more likely they are to drive instead of walk or bike. This is expected, as the literature has documented that older populations in the United States tend to prefer automobile transport over other modes.      
-  
-Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips. 
+1. The more vehicles someone has in their household, the more likely they are to drive and less likely they are to walk or bike. This may be due solely to the fact that someone with access to more cars is less likely to have to compete with another household member for a vehicle. However, it could also reflect the fact that people living in the suburbs tend to have more cars and lower access to other modes such as transit or walking. Below, we can see that when controlling for income and trip duration, people with more vehicles in their household are more likely to drive to work, whereas people with fewer are more likely to bike or walk.  
 
 ```{r car scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
@@ -392,6 +376,13 @@ ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) +
 plotTheme(), ncol = 1, top = "3 Household Car Scenarios")
 ```
 
+  
+2. More workers in a household means a person is less likely to drive, and more likely to bike or walk to work. This supports the theory that mode choice is determined, in part, with whether one has to compete with household members for transportation resources.     
+  
+3. Trip duration is a predictor for mode because on average, a car commute takes 4 minutes longer than a bike or walking commute. It's possible that this is because people are unlikely to choose biking or walking, more labor intensive modes, for longer commutes.    
+  
+4. The older someone is, the more likely they are to drive instead of walk or bike. This is expected, as the literature has documented that older populations in the United States tend to prefer automobile transport over other modes. As we see below, when controlling for trip duration and income, older commuters are more likely to drive and less likely to walk or bike compared to younger ones.  
+
 ```{r age scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 
 mod <- glm ( drove_work ~ AGE+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
@@ -424,6 +415,13 @@ pred_dat$Pred_44Years_Inc50K<- predict(mod, newdat_gg, type="response")
 pred_dat$Pred_25Years_Inc50K<- predict(mod, newdat_gg_1, type="response")
 pred_dat$Pred_55Years_Inc50K<- predict(mod, newdat_gg_2, type="response")
 
+pred_dat2<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat2)<- c("TRPDUR", "Pred_44Years_Inc50K", "Pred_25Years_Inc50K", "Pred_55Years_Inc50K")
+pred_dat2$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat2$Pred_44Years_Inc50K<- predict(mod2, newdat_gg, type="response")
+pred_dat2$Pred_25Years_Inc50K<- predict(mod2, newdat_gg_1, type="response")
+pred_dat2$Pred_55Years_Inc50K<- predict(mod2, newdat_gg_2, type="response")
+
 dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
 dat2 <- gather(pred_dat2, -TRPDUR, key = "Scenario", value = "value")
 
@@ -438,10 +436,14 @@ ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) +
         xlab("Trip Duration") + ylab("Predicted Probability") + plotTheme(), ncol = 1, top = "3 Age Scenarios")
 ```
 
+  
+Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips. 
 
-## Multinomial Logit: drive, carpool, transit, walk, or bike to work  
 
-```{r drive carpool transit walk or bike}
+## Multinomial Logit: drive, carpool, transit, walk, or bike to work      
+Now we create a model to predict whether somebody will drive, carpool, ride transit, walk, or bike to work. First, we clean the data and calculate important metrics such as travel time, travel distance, and parking and toll costs for each mode. Driving is the most popular mode by far, with more than 2500 observations. Transit and walking each have less than 200 observations, while biking and carpool each have less than 50.   
+
+```{r drive carpool transit walk or bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 trips_person_hh <- trips_person_hh %>%
   mutate(walk_work = case_when (TRAN1 == 11  ~ 1, TRUE ~ 0),
          bike_work = case_when(TRAN1 == 14 ~ 1, TRUE ~ 0))
@@ -459,8 +461,18 @@ CommuteTripsClean$Commute[CommuteTripsClean$bike_work == 1] <- 5
 table(is.na(CommuteTripsClean$Commute))
 table(CommuteTripsClean$Commute)
 
+
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 1] <- "Drive"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 2] <- "Carpool"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 3] <- "Transit"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 4] <- "Walk"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 5] <- "Bike"
+CommuteTripsClean$hist <- as.factor(CommuteTripsClean$hist)
 #plot frequency of each mode chosen
-hist(CommuteTripsClean$Commute)
+ggplot(CommuteTripsClean, aes(x=hist)) +
+  labs(title = "Frequency of each mode choice") +
+  geom_bar()
+
 
 CommuteTripsClean <- subset(CommuteTripsClean, !duplicated(X))
 
@@ -505,28 +517,25 @@ dat2 <- dat %>%
 
 rownames(dat2) <- NULL 
 ```
-
-```{r}
+Let's clean the data further to prepare for modelling.  
+```{r modelling work, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 dat_final <-
   dat2 %>%
-  select("SAMPN.x", "PERNO.x", "X", "AGE", "INCOME", "SAMPN_PER", "with_toll", "TOLL", "with_park", "PARKU","PARKO" ,"TRPDUR", "drove_work", "transit_work","carpool_work", GEND, DISAB, EDUC, TOTVEH, ADVLT, RENT, ENGL , HHSIZE, NPHON , NOWRK, starts_with("time"),mode)
+  dplyr::select("SAMPN.x", "PERNO.x", "X", "AGE", "INCOME", "SAMPN_PER", "with_toll", "TOLL", "with_park", "PARKU","PARKO" ,"TRPDUR", "drove_work", "transit_work","carpool_work", "GEND", "DISAB", "EDUC", "TOTVEH", "ADVLT", "RENT", "ENGL" , "HHSIZE", "NPHON" , "NOWRK", starts_with("time"),mode)
 
 dat_final[is.na(dat_final)] <- 0
 
 head(dat_final)
-
+library(mlogit)
 datMNL <- mlogit.data(dat_final, shape="wide", choice="mode", varying=c(26:30))
 
 head(datMNL)
-
 ```
 
-We selected variables that are relevant across all modes (i.e. toll or parking are only related to driving, so we excluded them).
-
-```{r}
+We selected variables that are relevant across all modes (i.e. toll or parking are only related to driving, so we excluded them). Below, we create 3 models to start: a model with only decision maker specific variables, a model with alternative and decision maker specific variables, and a model with only alternative specific variables. The model with both alternative and decision maker variables has the highest McFadden R^2. 
+```{r MNL models, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #mod 1
 mod1 <- mlogit (mode ~ 1 | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
-
 summary(mod1)
 
 #mod 2 with time
@@ -536,7 +545,36 @@ summary(mod2)
 #mod 3 only with time
 mod3 <-mlogit (mode ~ time | 1, data = datMNL)
 summary(mod3)
-
-
 ```
+
+Based on this, we create a more succinct model based on model 2, removing statistically insignificant variables. The list of variables we use includes: INCOME, GEND, EDUC, TOTVEH, NPHON, and HHSIZE. This reduction in variables slightly lowers  the model's McFadden R^2, but it now has a much higher proportion of significant variables. Comparing the AIC of all 4 models, we see that model 4 has the lowest AIC, meaning it has the best fit. 
+```{r var selection MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#mod 4: with time and decisionmaker specific, insignificant variables removed
+mod4 <-mlogit (mode ~ time | INCOME + GEND + EDUC + TOTVEH + NPHON + HHSIZE, data = datMNL)
+summary(mod4)
+
+AIC(mod1, mod2, mod3, mod4)
+```
+
+Using a chi-square test, we further confirm that adding alternative specific variables (time) and eliminating insignificant variables improves model fit. 
+```{r chisq test MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#think back to chisq test we did for binomial
+modelChi <- (-2*(-780.35)) - (-2*(-754.41)) 
+#-754.4 = log likelihood for mod2
+#-780.35 = log likelihood for mod4
+#this is the chisq in output
+
+#calculating change in degree of freedom
+mod4$logLik
+df.mod4 <- 29
+mod2$logLik
+df.mod2 <- 45
+
+chidf <- df.mod4 - df.mod2
+
+#if prob < 0.05, then the final model significantly improves fit
+chisq.prob <- 1 - pchisq(modelChi, chidf)
+chisq.prob #this is the chisq p-value in the output
+```
+
 
