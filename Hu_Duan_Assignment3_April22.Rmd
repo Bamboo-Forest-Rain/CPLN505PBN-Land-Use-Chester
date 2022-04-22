@@ -1,0 +1,1037 @@
+---
+title: "CPLN505-Assignment 3"
+author: "Yihong Hu & Anna Duan"
+date: "4/22/2022"
+output:
+  html_document:
+    keep_md: yes
+    toc: yes
+    theme: cosmo
+    toc_float: yes
+    code_folding: hide
+    number_sections: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) # data processing and plotting package
+library(sf) # standard R spatial package
+library(kableExtra)
+library(gmodels)
+library(ggcorrplot)
+library(gganimate)
+library(gifski)
+library(caret)
+library(RSocrata)
+library(FNN)
+library(car)
+library(DescTools)
+library(LogisticDx)
+library(gridExtra)
+library(ggcorrplot)
+
+
+plotTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 14,colour = "black"),
+    plot.subtitle = element_text(face="italic"),
+    plot.caption = element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line("grey80", size = 0.1),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "white", fill=NA, size=2),
+    strip.background = element_rect(fill = "grey80", color = "white"),
+    strip.text = element_text(size=12),
+    axis.title = element_text(size=12),
+    axis.text = element_text(size=10),
+    plot.background = element_blank(),
+    legend.background = element_blank(),
+    legend.title = element_text(colour = "black", face = "italic"),
+    legend.text = element_text(colour = "black", face = "italic"),
+    strip.text.x = element_text(size = 14)
+  )
+}
+
+
+```
+
+# Part 1: Modelling Land Use Change  
+
+In this report, we will develop a binary model to predict the possibility of land-use change in Chester County, PA. We want to know:
+(1) What are the main factors that determine a location to change from non-urban to urban in Chester County.
+(2) What are the possibility for specific locations for land-use change in Chester County 
+
+```{r Load Data,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+# Read Chester land use Data and its geometry
+Chester_L <- read.csv("Chester_Urban_Growth.csv") 
+Chester_L_geo <-
+  Chester_L%>%
+  st_as_sf(coords=c("X","Y"),crs = "EPSG:25832")
+
+```
+
+## Summary Statistics 
+
+```{r Chester Summary Statistics, echo=FALSE,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Retrieve Numeric Data
+Chester_Numeric <-
+  Chester_L %>%
+  select_if(~any(. > 1)) %>%
+  select(-X, -Y)
+
+#Summary Statistics in the Table
+summary(Chester_Numeric) %>% kable() %>% kable_styling(bootstrap_options = "striped", full_width = T, position = "left", fixed_thead = T)
+```
+
+## Binary Variables
+
+We first created a column that indicates the land-use change from non-urban to urban between 1992 and 2002. If the change occurred, it will be marked as "1" in the new column, otherwise it will be marked as "0".
+
+```{r Binary,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+#Find urban land use change between 1992 and 2001
+Chester_L <-
+  Chester_L %>%
+  mutate(CHNG_URB = URBAN01 - URBAN92) 
+
+#Negative indicates that the urban land use  in 1992 has changed to other use in 2021. Replace them with 0.
+Chester_L$CHNG_URB[Chester_L$CHNG_URB < 0] <- 0
+
+```
+
+## Build Binomial Logit Model 
+
+First, we cleaned the dataset. We changed the some zeros to "NA", so the regression can bypass them.  
+```{r Clearning Dataset, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+Chester_L_clean <- Chester_L %>%
+  select(DIST_WATER,DIST_RAILS, DIST_REGRA, DIST_PASSR, DIST_4LNE_, DIST_INTER, DIST_PARKS)
+
+is.na(Chester_L_clean) <- !Chester_L_clean
+
+Chester_Clean_2 <- Chester_L %>%
+  select(-DIST_WATER,-DIST_RAILS, -DIST_REGRA, -DIST_PASSR, -DIST_4LNE_, -DIST_INTER, -DIST_PARKS)
+
+Chester_L_Final <-
+  cbind(Chester_L_clean, Chester_Clean_2)
+
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + PARKS500M + WATER100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + PCT_COLGRD + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER+ DIST_PARKS, family = binomial, data = Chester_L_Final)
+
+summary(bi_model)
+
+```
+
+The AIC is shown to be 1451 with very few significant variables. We then used backward and forward selection methods to give a list of the most relevant variables. Some variables returned NA in the model, which means they are co-linear with other variables. We removed these variables.
+
+```{r message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Remove "Park", "Water", "College" variables in the regression.
+bi_model <-
+  glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_RAILS + DIST_REGRA + DIST_PASSR + DIST_4LNE_ + DIST_INTER + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model)
+```
+
+The variance inflation factors (VIF) is calculated to test the co-linearity of the variables. 
+
+```{r,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+vif(bi_model)
+```
+
+A general rule of thumb is to not use any variables that return VIFs greater than 5 in a regression model. We thus removed DIST_RAILS, DIST_REGRA, DIST_INTER from the set. 
+
+```{r new model,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+bi_model2 <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = Chester_L_Final)
+
+summary(bi_model2)
+
+```
+
+We used backward and forward selections are used to select variables that give the best results.
+
+```{r,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Backward Selection
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final)), direction = "backward")
+
+#Forward Selection
+fullmod<-glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + POPDEN90 + MEDINC90 + MEDHSEVAL_+ PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + PCT_HSB_19 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+intonly<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_L_Final))
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+
+```
+
+The best result is given by both the backward and forward selections, with the lowest AIC of 1452. The variables included in the model are DIST_4LNE_, REGRAIL300, CITBORO_10, DIST_PARKS, DIST_PASSR, DIST_WATER, POPDEN90, PCT_POV_90, PCT_WHITE_, RAILSTN100, MEDHSEVAL_, PCT_SFHOME. The forward selection also omitted any row that contains NA, so there are less observations. 
+
+```{r new model 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE,}
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + RAILSTN100 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+
+#Delete the insignificant variable RAILSTN100
+
+bi_model3 <- glm(CHNG_URB ~ REGRAIL300 + CITBORO_10 + 
+POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER, family = binomial, data = na.omit(Chester_L_Final))
+
+summary(bi_model3)
+```
+
+## Goodness of fit
+
+From the model summary above, we know that the degree freedom is 5493. We calculated the model fitness using ChiSq. 
+
+```{r Chisq, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+qchisq(.95, df=5493) 
+```
+
+The critical value is 5666.533. The null deviance value of the model (1763.5) is much lower than the critical value, meaning our predicted results will have no significant difference from the observations.
+
+```{r test for fiteness, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+model3_fitness <- gof(bi_model3, plotROC = FALSE)
+
+model3_fitness$gof
+```
+
+## Model Results 
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+exp(coef(bi_model3))
+100 * (exp(coef(bi_model3))-1)
+```
+
+Several goodness of fit tests, suggest that the model's predicted results are in the reasonable range similar to that of the original data (with the p-values greater than 5%).
+
+According to the model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least, 1) if the location is within 300 meters of a SPETA regional rail line, 2) if the location is within 1,000 meters of a city or boro, 3) the location's percent of households living below poverty line in 1990, and 4) the location's percent of white households. These three factors have the largest impact on the possibility of a location being urbanized. 
+
+Every percentage increase in households living below poverty line is associated with a 8% decrease in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
+
+In the same way, for every percent of increase in white population, there is a 3% decrease in chance of successfully being urbanized.
+
+If a location is within the 300 meters of a SPETA regional railway, it will have 159% increase in the chance of being urbanized comparing to those that are outside of the range. 
+
+If a location is within 1000 meters of another city or boro, the chance of being urbanized is increased by 128%. 
+
+## Model Improvement
+
+The statistic summary shows that majority of Chester County has high income and low poverty rate. This might suggest that the distribution of these variables might be skewed. 
+
+```{r distribution, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+Chester_Numeric %>%
+  gather(Variable, Value) %>%
+  ggplot(aes(Value)) + 
+    geom_histogram(bins = 30, color="blue", fill="blue", alpha=0.2) + 
+    facet_wrap(~Variable, scales = 'free')+
+    labs(title = "Distribution of Variables") + ylab("Count")  +
+  theme(panel.background = element_rect(colour = "grey50", size=3))
+
+```
+
+Most of the data are highly skewed. We created some dummy variables to adjust the dataset. 
+
+The thresholds for the new binary variables are based on their median value in the dataset. 
+
+```{r dummy, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+summary(Chester_Numeric)
+
+# REGRAIL300 + CITBORO_10 + 
+# POPDEN90 + MEDHSEVAL_ + PCT_WHITE_ + PCT_SFHOME + PCT_POV_90 + 
+# DIST_PASSR + DIST_4LNE_ + DIST_PARKS + DIST_WATER
+
+Chester_bi <-
+  Chester_L_Final%>%
+  mutate(bi_POV_less4 = case_when(PCT_POV_90 < 4 ~ 1, TRUE ~ 0),
+         bi_POPDEN_less60 = case_when(POPDEN90 < 60 ~ 1, TRUE ~ 0),
+         bi_WHITE_less97 = case_when(PCT_WHITE_ < 97 ~ 1, TRUE ~ 0),
+         bi_SFHOME = case_when(PCT_SFHOME < 86 ~ 1, TRUE ~ 0))
+```
+
+```{r dummy model, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+#Replace log infinite with NA
+Chester_bi <- do.call(data.frame,                      
+               lapply(Chester_bi,
+              function(x) replace(x, is.infinite(x), NA)))
+
+#Model
+bi_model_bi <- glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi))
+
+summary(bi_model_bi)
+
+```
+
+Just by creating dummy variables, even before variable selection, the model's AIC is reduced by 200. Some of the variables are co-linear with each other, we removed them from the final model.
+
+```{r Variable Selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+#Backward Selection Log
+
+step(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi)))
+
+#Forward Selection log
+fullmod2<-glm(glm(CHNG_URB ~ FOURLNE300 + INTERST800 + REGRAIL300 + RAILSTN100 + CITBORO_10 + PARKS500M + WATER100 + 
+bi_POPDEN_less60 + MEDHSEVAL_ + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4  + DIST_PASSR + DIST_4LNE_ + DIST_PARKS  + DIST_WATER + DIST_RAILS + DIST_REGRA + DIST_INTER + PCT_HSB_19 + SLOPE + MEDINC90 , family = binomial, data = na.omit(Chester_bi)))
+
+intonly2<-glm(CHNG_URB ~ 1, family = binomial, data = na.omit(Chester_bi))
+
+step(intonly2, scope=list(lower=intonly2, upper=fullmod2), direction="forward")
+
+CHNG_URB ~ DIST_4LNE_ + DIST_REGRA + bi_POPDEN_less60 + CITBORO_10 + 
+    DIST_PASSR + bi_POV_less4 + bi_WHITE_less97 + bi_SFHOME + 
+    DIST_PARKS + PCT_HSB_19 + SLOPE + REGRAIL300
+
+CHNG_URB ~ REGRAIL300 + CITBORO_10 + bi_POPDEN_less60 + bi_WHITE_less97 + bi_SFHOME + bi_POV_less4 + DIST_PASSR + DIST_4LNE_ + DIST_PARKS + 
+  DIST_REGRA + PCT_HSB_19 + SLOPE
+```
+
+The forward and backward selection methods gave the same set of the most relevant variables for determining probability of urbanization. 
+
+```{r model with selected variables, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+bi_model_bi2 <- glm(formula = CHNG_URB ~ DIST_4LNE_ + DIST_REGRA + bi_POPDEN_less60 +  CITBORO_10 + DIST_PASSR + bi_POV_less4 + bi_WHITE_less97 + bi_SFHOME + DIST_PARKS + PCT_HSB_19 + SLOPE + REGRAIL300, family = binomial, data = na.omit(Chester_bi))
+
+summary(bi_model_bi2)
+
+vif(bi_model_bi2)
+```
+
+The AIC is 1408 of the final model and the VIF is all well below 5, meaning there are no co-linear variables.
+
+```{r goodness of fit, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+qchisq(.95, df=5493)
+```
+
+The critical value is 5666.5. The null deviance value of the model (1763) is much lower than the critical value, meaning our predicted results will be in a similar range as the observations. 
+
+*The model with more binary variables is more reliable to predict the results.*
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+exp(coef(bi_model_bi2))
+100 * (exp(coef(bi_model_bi2))-1)
+```
+
+According to the new model, the most important factors that explains the land use change between 1992 and 2001 are, from greatest to least:   
+1) if the location has an household poverty below 4%   
+2)if the location has an white population below 97%   
+3) if the location is located within 300 meters of a SEPTA railway    
+4) if the location is within 1000 meters of city and boro.   
+These four factors have the largest impact on the possibility of a location being urbanized. 
+
+The fact that an area has less than 4% of the households living below poverty line is associated with a *107% increase* in the odd ratio. The odd ratio is the possibility of success over possibility of failure. A decrease in the odd ratio means that the location will households less chance to turn into a urban area when the percent of households living in poverty increases. 
+
+In the same way, if the area has less than 97% of the white population there is a *91% decrease* in chance of successfully being urbanized.
+
+The fact that an area is located within 300 meters of a SEPTA railway is associated with *71% increase* in chance of successfully being urbanized.
+
+If a location is within 1000 meters of another city or boro, the chance of being urbanized is *increased by 67%*. 
+
+## Other suggestions
+
+Some additional data could be gathered, such as the population density, household income, and median housing value from 2000 census.  The demographic and economic growth rates could be another huge factor for urbanization. These could be more relevant variables to determine probability of land use. 
+
+## Conclusion with Plots and Tables 
+
+```{r variables against Slope ,message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+#Holding everything else constant, but percent poverty 
+
+## 0 in household poverty below 4%
+
+POV_possibility <- data.frame(bi_POV_less4 = 0, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility <-
+  POV_possibility %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility,type = "response"))
+
+## 1 in household poverty below 4%
+POV_possibility2 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility2 <-
+  POV_possibility2 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility2,type = "response"))
+
+##  0 in household poverty below 4% and 0 in city
+POV_possibility3 <- data.frame(bi_POV_less4 = 0, REGRAIL300 = 1, CITBORO_10 = 0, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility3 <-
+  POV_possibility3 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility3,type = "response"))
+
+## 1 in household poverty below % and 0 in city
+POV_possibility4 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 0, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+POV_possibility4 <-
+  POV_possibility4 %>%
+  mutate(predict_result = predict(bi_model_bi2,POV_possibility4,type = "response"))
+
+
+#Combing the results in a new data frame
+POV_PRE <- data.frame(SLOPE = POV_possibility$SLOPE, 
+HOUSEPOV0_CITY1 = POV_possibility$predict_result, 
+HOUSEPOV1_CITY1 = POV_possibility2$predict_result,
+HOUSEPOV0_CITY0 = POV_possibility3$predict_result,
+HOUSEPOV1_CITY0 = POV_possibility4$predict_result)
+
+#Arrange the data by scenario
+dat <- gather(POV_PRE, -SLOPE, key = "Scenario", value = "value")
+#Plot the data 
+
+ggplot(dat, aes(x = SLOPE, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,0.2) +
+        xlab("% Slope") + ylab("Predicted Probability of Urbanization") + theme_light()
+```
+
+While holding every other variable constant (with their mean values), the graph above shows the predicting results when changing factor whether the location has less than 4 percent of households living below poverty line and within 1000 meters of a city or boro. 
+
+The purple curve denotes the probability when the location has both more than 4% of the households living in poverty and is within 1000 meters of a of a city or boro. 
+
+The blue curve denotes the probability when the location has more than 4% of the households living below poverty line, but *not* within 1,000 meters of a city or boro.
+
+The green curve denotes the probability when the location is within 1,000 meters of a city or boro, but has *less* than 4% of the households living below poverty line. 
+
+The red curve denotes the probability when the location has both *less* than 4% of the households living below poverty line and also *not* within 1,000 meters if a city or boro. 
+
+All the curves are plotted against the change in slope
+
+The graph above shows that when a location has more households living below poverty line and is 1,000 meters of a city or boro, the likelihood of it being urbanized is much higher. 
+
+The blue curve is higher than the green curve in the graph. This shows that whether the location has more than 4% of the households living below poverty line is a stronger predictor than whether the location is within 1000 meters of a city or boro. 
+
+The graph also shows as the percent slope increases, the predicted probably of urbanization decreases as well. 
+
+```{r variables against Slope, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+#Holding everything else constant, but percent poverty 
+
+## 0 in white
+
+WHI_possibility <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 0, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+WHI_possibility <-
+  POV_possibility %>%
+  mutate(predict_result = predict(bi_model_bi2,WHI_possibility,type = "response"))
+
+## 1 in white
+WHI_possibility2 <- data.frame(bi_POV_less4 = 1, REGRAIL300 = 1, CITBORO_10 = 1, bi_POPDEN_less60 = 1, bi_WHITE_less97 = 1, bi_SFHOME = 1, DIST_4LNE_ = mean(Chester_bi$DIST_4LNE_,na.rm = TRUE), DIST_PARKS = mean(Chester_bi$DIST_PARKS,na.rm = TRUE), DIST_REGRA = mean(Chester_bi$DIST_REGRA,na.rm = TRUE), DIST_PASSR = mean(Chester_bi$DIST_PASSR, na.rm = TRUE), PCT_HSB_19 = mean(Chester_bi$PCT_HSB_19), SLOPE = Chester_bi$SLOPE)
+
+WHI_possibility2 <-
+  POV_possibility2 %>%
+  mutate(predict_result = predict(bi_model_bi2,WHI_possibility2,type = "response"))
+
+#Combing the results in a new data frame
+WHI_PRE <- data.frame(SLOPE = WHI_possibility$SLOPE, WHITE_ABOVE_97PERCENT = WHI_possibility$predict_result, WHITE_BELOW_97PERCENT = WHI_possibility2$predict_result)
+
+#Arrange the data by scenario
+dat <- gather(WHI_PRE, -SLOPE, key = "Scenario", value = "value")
+#Plot the data 
+
+ggplot(dat, aes(x = SLOPE, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,0.2) +
+        xlab("% Slope") + ylab("Predcted Probabiility of Urbanization") + theme_light()
+
+```
+
+The above graph shows the predicted probability of urbanization when the percent of white population is either below or above 97% in a given location in 1990 against percent slope. 
+
+When the location has high poverty among households and is within 1000 meters of a city or boro, and other variables are held constant (with their mean values), whether the percent of white population in a location is below or above 97% shows an huge effect on the predicted probability of urbanization. 
+
+The blue line denotes the probability when an area has less than 97 white population in the area against percent households in poverty.
+
+The red line denotes the probability when an area has more than 97 white population in the area against percent households in poverty.
+
+The graph shows that, in Chester County, those areas that lived with less white population in 1990 had a higher chance of being urbanized in 2001 based on the graph. 
+
+
+
+
+
+
+
+# Part 2: Modelling Commute Mode Choice  
+
+In this report, we model the following using trip data from the Delaware Valley Regional Planning Commission:        
+1. Whether a commuter drove to work      
+2. Whether a commuter walked or biked to work    
+3. Whether a commuter drove to work, carpooled, took public transit, or walked or biked
+
+```{r Read Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+
+# Read Chester land use Data and its geometry
+
+trips <- read.csv("HH Travel Survey/trip_pub.csv") %>%
+ # filter(ACT1 == 11 | ACT1 ==12) %>% #filter for work trips
+  mutate(drove_work = ifelse(TRAN1 == 21, 1, 0),
+         bike_walk_work = ifelse(TRAN1 == 11 | TRAN1 == 14, 1, 0),
+         transit_work = ifelse(TRAN1 == 41 | TRAN1 == 44 | TRAN1 == 47 | TRAN1 == 51 | TRAN1 == 52 | TRAN1 == 53, 1, 0),
+         carpool_work = ifelse(TRAN1 == 31, 1,0),
+         )
+# %>%
+#   dplyr::select(-DVRPC, -SPDFLAG, -OEGRES, -EGRESS, -EXIT, -OTRFS, -FARE3, -PAY3O, -PAY3, -TRFL2, -TRFS2, -FARE2, -PAY2O, -PAY2, -TRFL1, -TRFS1, -TRFR, -FARE1, -PAY1O, -PAY1, -LINE, -OACESS, -ACCESS, -SUBTR, -APDPN, -APDPH, -ADDPN, -ADDPH, -ADDP, -TOLLA, -TOLL, -PRKUO, -NNHTR, -PHHTR, -ADP, -HHVU, -OTRAN, -PLANO, -X, -ACT2, -ACT3, -ACT4, -ACT5, -ACT6, -ACT1O, -ACTO, -TRAN4, -TRAN3, -PARKO, -APDP, -X.1, -TRAN1, -TRAN2)
+
+households <- read.csv("HH Travel Survey/hh_pub_CSV.csv", header = TRUE) %>%
+  dplyr::select(ADVLT, TOTVEH, DWELL, YRMOV, RENT, DIARY, ENGL, HHSIZE, NPHON, NOPHO, SHPHN, ETHNC, INCLV, INCOM, INCOME, ASSN, DPHON, NPLAC, NTRIPS, NOWRK, NOSTU, OWNSH, EACCT, CPA, DAYOFWK, HBW, HBO, NHB, MOTTRIP, SAMPN, LISTD, HADDR)
+
+persons <- read.csv("HH Travel Survey/per_pub.csv") %>%
+  dplyr::select(SAMPN, PERNO, GEND, AGE, LIC, RESP, RELAT, DISAB, DISTY1, DISTY2, EDUC, SHOME, SDAY, SMODE1)
+```
+
+First, we clean the data and merge three datasets capturing participants' trip, household, and demographic attributes. We clean out NAs, and filter the data to make sure the values are all in the correct ranges.  
+
+```{r clean Data, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+
+trips$drove_work[which(is.na(trips$drove_work))]<-0
+trips$bike_walk_work[which(is.na(trips$bike_walk_work))]<-0
+trips$transit_work[which(is.na(trips$transit_work))]<-0
+trips$carpool_work[which(is.na(trips$carpool_work))]<-0
+trips$SUMZERO<- trips$drove_work + trips$bike_walk_work + trips$transit_work + trips$carpool_work
+trips <- trips[-which(trips$SUMZERO == 0), ] 
+
+trips <- trips[which(trips$Dest_PTYE == 2), ] 
+trips$Commute[trips$drove_work == 1] <- 1
+trips$Commute[trips$bike_walk_work == 1] <- 2
+trips$Commute[trips$transit_work == 1] <- 3
+trips$Commute[trips$carpool_work == 1] <- 4
+
+
+trips$SAMPN_PER <- do.call(paste, c(trips[c("SAMPN", "PERNO")], sep = ""))
+trips <- subset(trips, !duplicated(SAMPN_PER))
+
+person_hh <- merge(persons, households,
+                    by.x = "SAMPN", 
+                    by.y = "SAMPN", 
+                    all.x = TRUE, 
+                    all.y=FALSE, 
+                    sort = FALSE)
+# colnamCleaning<-c("VETMO", "W2TY", "W2TYO",  "W2TYP", "W2LOC", "W2IND", "W2INO", "W2OCC", "W2OCO", "W2DAY", "W2HOM", "W2HOO", "W2ST", "W2ET",  "W1WKD3", "W1WKD4", "W1WKE", "W1WKD1", "W1WKD2")
+# person_hh<-person_hh[ , -which(names(persons) %in% colnamCleaning)]
+
+person_hh$SAMPN_PER <- do.call(paste, c(person_hh[c("SAMPN", "PERNO")], sep = ""))
+
+trips_person_hh <- merge(trips, person_hh,
+                            by.x = "SAMPN_PER", 
+                            by.y = "SAMPN_PER", 
+                            all.x = TRUE, 
+                            all.y=FALSE, 
+                            sort = FALSE)
+
+# varsInterest <- c("SAMPN", "PERNO", "AGE", "GENDER", "INCOME", "SAMPN_PER", "TOLLA", "TOLL", "PARKC", "PARKU", "PRKUO", "TRPDUR", "drove_work", "bike_walk_work", "transit_work", "carpool_work", "Commute")
+# trips_person_hh<-trips_person_hh[ , which(names(trips_person_hh) %in% varsInterest)]
+
+# trips_person_hh<-trips_person_hh[-which(is.na(trips_person_hh$INCOME)),]
+
+drive<-trips_person_hh[which(trips_person_hh$drove_work ==1),]
+walk_bike<-trips_person_hh[which(trips_person_hh$bike_walk_work ==1),]
+transit<-trips_person_hh[which(trips_person_hh$transit_work ==1),]
+carpool<-trips_person_hh[which(trips_person_hh$carpool_work ==1),]
+
+
+summary(drive$TRPDUR)     #mean: 26
+summary(walk_bike$TRPDUR) #mean: 21
+summary(transit$TRPDUR)   #mean: 51
+summary(carpool$TRPDUR)   #mean: 40
+
+drive$distance<-(30/60)*drive$TRPDUR
+walk_bike$distance<-(12/60)*walk_bike$TRPDUR
+transit$distance<-(25/60)*transit$TRPDUR
+carpool$distance<-(30/60)*carpool$TRPDUR
+
+#re-combine the three data sets 
+dat<-rbind(drive, walk_bike, transit, carpool)
+
+#potential times for each
+dat$time.auto <-dat$distance/30
+dat$time.bike.walk <- dat$distance/12
+dat$time.transit <- dat$distance/25
+dat$time.carpool <- dat$distance/30
+
+dat$mode[dat$drove_work == 1] <- "drove"
+dat$mode[dat$transit_work == 1] <- "transit"
+dat$mode[dat$bike_walk_work == 1] <- "bike"
+dat$mode[dat$carpool_work == 1] <- "carpool"
+
+rownames(dat) <- NULL 
+# 
+# varsInterest <- c("AGE", "GENDER", "INCOME", "time.auto", "time.bike.walk", "time.transit", "time.carpool", "mode")
+# dat<-dat[ , which(names(dat) %in% varsInterest)]
+
+#clean data further
+trips_person_hh <-trips_person_hh[which(trips_person_hh$AGE %in% 1:110),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$TRPDUR %in% 0:400),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
+
+```
+
+## Binary Logit: Driving, Biking, and Walking to Work   
+### Model 1: Drive to Work        
+First, we test a model using the maximum number of variables, just as a baseline. This model includes trip duration, gender, age, disability, education, total vehicles in a household, adults in household, rent or not, whether they speak English, household size, number of phones in the household, income, and whether a household has working adults. The AIC is 1493, with just about half of the variables marked as statistically significant.   
+
+```{r modelling, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+
+mod_drive <- glm ( drove_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
+summary(mod_drive)
+
+#take out some outliers
+trips_person_hh <-trips_person_hh[which(trips_person_hh$AGE %in% 1:110),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$TRPDUR %in% 0:400),]
+trips_person_hh <-trips_person_hh[which(trips_person_hh$INCOME %in% 0:200000),]
+```
+
+Using vif(), we can see that the variance inflation factor for all variables is below 5, meaning the model does not suffer from too much collinearity.  
+
+```{r vif, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+vif(mod_drive)
+```
+
+To create the "leanest and meanest" model, we use forward and backward selection to select the variables which contribute statistically significantly to the model and lower its AIC.     
+```{r fwd bkwd selection, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Backward Selection
+step(glm(drove_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh), direction = "backward")
+
+#Forward Selection
+fullmod<-glm(drove_work ~ TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, family = binomial, data = trips_person_hh)
+
+intonly<-glm(drove_work ~ 1, family = binomial, data = trips_person_hh)
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+```
+
+Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + GEND (gender). After running the model, I remove gender because it is not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.     
+```{r fwd bkwd selection 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
+
+mod_drive_3 <- glm(drove_work ~ TOTVEH + NOWRK + TRPDUR + AGE + EDUC + RENT, family = binomial, data = trips_person_hh)
+summary(mod_drive_3)
+
+#test fit
+qchisq(.95, df=2918) 
+```
+
+Anova also tells us that the variables all contribute significantly, and add to the model's accuracy in the following order: total vehicles, no work, trip duration, age, education, and renters.      
+```{r anova, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#anova
+anova(mod_drive_3, test="Chisq") #anova tells us that the following are statistically significant contributions: Trip duration, gender, age, total vehicles, household size, no work 
+
+```  
+
+We also calculate the predicted probabilities using the model. Here, we set the cut off for driving to work as 0.5. The results tell us that our model predicts correctly 92% of the time. 
+```{r accuracy, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#calculate predicted probabilities 
+pred <- as.data.frame(fitted(mod_drive_3))
+pred <- rename(pred, "prob" = "fitted(mod_drive_3)")
+pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
+#append to original df
+trips_person_hh$binary <- pred$binary
+       
+(sum(trips_person_hh$drove_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$drove_work == 0  #92%: not bad
+  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
+
+
+```
+
+
+### Model 2: Walk or Bike to Work   
+Just like with drive to work, we start with a "kitchen sink" model to get an overview of all the variables. Just like before, only about half of the variables are statistically significant, and the AIC is 915.  
+```{r walk bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE, results='hide'}
+mod_bike <- glm ( bike_walk_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh, family = binomial)
+summary(mod_bike)
+```
+
+Using vif(), we can see that the variance inflation factor for all variables is below 5, meaning the model does not suffer from too much collinearity.  
+```{r vif bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+vif(mod_bike)
+```
+
+To create the "leanest and meanest" model, we use forward and backward selection to select the variables which contribute statistically significantly to the model and lower its AIC.     
+```{r fwd bkwd selection bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#Backward Selection
+step(glm(bike_walk_work ~  TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, data=trips_person_hh), direction = "backward")
+
+#Forward Selection
+fullmod<-glm(bike_walk_work ~ TRPDUR  + GEND + AGE+DISAB+EDUC + TOTVEH + ADVLT + RENT + ENGL + HHSIZE + NPHON + INCOME + NOWRK, family = binomial, data = trips_person_hh)
+
+intonly<-glm(bike_walk_work ~ 1, family = binomial, data = trips_person_hh)
+
+step(intonly, scope=list(lower=intonly, upper=fullmod), direction="forward")
+```
+
+Forward and backward selection outputs the list of variables that give the model the lowest AIC of 1452: TOTVEH (total vehicles) + NOWRK (nobody working in household) + TRPDUR (trip duration) + AGE + EDUC (education) + RENT (renter or not) + DISAB (disability) + INCOME. After running the model, I remove NPHON, INCOME, and DISAB because they are not statistically significant. This model now has all statistically significant variables. qchisq() then tells us that the critical value is 5666.533. Since the null deviance of the model is 1946, we know that our predicted results will have no significant difference from the observations.       
+```{r fwd bkwd selection bike 2, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#lowest aic: 1493, vars: TOTVEH + NOWRK + TRPDUR + AGE + GEND
+
+mod_bike_3 <- glm(bike_walk_work ~ TRPDUR + AGE + TOTVEH + RENT + NOWRK + EDUC, family = binomial, data = trips_person_hh)
+summary(mod_bike_3)
+
+#test fit
+qchisq(.95, df=2918) 
+```
+
+Anova also tells us that the variables all contribute significantly, and add to the model's accuracy in the following order: trip duration, age, total vehicles, rent, no work, education.   
+```{r anova bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#anova
+anova(mod_bike_3, test="Chisq") 
+```  
+
+We also calculate the predicted probabilities using the model. Here, we set the cut off for biking or walking to work as 0.5. Unfortunately, our model predicts correctly just 6.5% of the time.   
+```{r accuracy bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#calculate predicted probabilities 
+pred <- as.data.frame(fitted(mod_bike_3))
+pred <- rename(pred, "prob" = "fitted(mod_bike_3)")
+pred <- mutate(pred, "binary" = ifelse(prob < 0.5, 0, 1))
+#append to original df
+trips_person_hh$binary <- pred$binary
+       
+(sum(trips_person_hh$bike_walk_work == 1 & trips_person_hh$binary == 1) + sum(trips_person_hh$bike_walk_work == 0  
+  & trips_person_hh$binary == 0)) / nrow(trips_person_hh)
+```
+
+## Binary Logit Conclusion and Plots        
+For the drive to work model, the results tell us that the following factors are the most influential in determining whether somebody drives to work:      
+  
+1. Total vehicles in household     
+3. Trip duration  
+4. Commuter age    
+5. Whether someone is in school    
+6. Whether someone rents or owns their home   
+
+For our walk and bike to work model, the following variables are the most significant:     
+  
+1. Trip duration  
+2. Commuter Age  
+3. Total vehicles in the household  
+4. Whether someone rents or owns their home  
+5. Number of workers in the home  
+6. Whether someone is in school  
+
+These results offer us several important takeaways:  
+   
+1. The more vehicles someone has in their household, the more likely they are to drive and less likely they are to walk or bike. This may be due solely to the fact that someone with access to more cars is less likely to have to compete with another household member for a vehicle. However, it could also reflect the fact that people living in the suburbs tend to have more cars and lower access to other modes such as transit or walking. Below, we can see that when controlling for income and trip duration, people with more vehicles in their household are more likely to drive to work, whereas people with fewer are more likely to bike or walk.  
+
+```{r car scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+mod <- glm ( drove_work ~ TOTVEH+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+mod2 <- glm ( bike_walk_work ~ TOTVEH+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+
+
+#Scenario 1: 1 vs 3 vehicles
+newdat_gg<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg$INCOME <- 50000
+newdat_gg$TOTVEH <- mean(trips_person_hh$TOTVEH)
+
+newdat_gg_1<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_1)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg_1$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_1$INCOME <- 50000
+newdat_gg_1$TOTVEH <- 1
+
+newdat_gg_2<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_2)<- c("TRPDUR", "INCOME", "TOTVEH")
+newdat_gg_2$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_2$INCOME <- 50000
+newdat_gg_2$TOTVEH <- 4
+
+#drove
+pred_dat<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat)<- c("TRPDUR", "Pred_2.3Cars_Inc50K", "Pred_1Car_Inc50K", "Pred_4Cars_Inc50K")
+pred_dat$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat$Pred_2.3Cars_Inc50K<- predict(mod, newdat_gg, type="response")
+pred_dat$Pred_1Car_Inc50K<- predict(mod, newdat_gg_1, type="response")
+pred_dat$Pred_4Cars_Inc50K<- predict(mod, newdat_gg_2, type="response")
+#bike/walk
+pred_dat2<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat2)<- c("TRPDUR", "Pred_2.3Cars_Inc50K", "Pred_1Car_Inc50K", "Pred_4Cars_Inc50K")
+pred_dat2$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat2$Pred_2.3Cars_Inc50K<- predict(mod2, newdat_gg, type="response")
+pred_dat2$Pred_1Car_Inc50K<- predict(mod2, newdat_gg_1, type="response")
+pred_dat2$Pred_4Cars_Inc50K<- predict(mod2, newdat_gg_2, type="response")
+
+dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
+dat2 <- gather(pred_dat2, -TRPDUR, key = "Scenario", value = "value")
+
+grid.arrange(
+ggplot(dat, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Drive to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") +
+  plotTheme(),
+ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Bike/Walk to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability")+
+plotTheme(), ncol = 1, top = "3 Household Car Scenarios")
+```
+
+2. More workers in a household means a person is less likely to drive, and more likely to bike or walk to work. This supports the theory that mode choice is determined, in part, with whether one has to compete with household members for transportation resources.     
+  
+3. Trip duration is a predictor for mode because on average, a car commute takes 4 minutes longer than a bike or walking commute. It's possible that this is because people are unlikely to choose biking or walking, more labor intensive modes, for longer commutes.    
+  
+4. The older someone is, the more likely they are to drive instead of walk or bike. This is expected, as the literature has documented that older populations in the United States tend to prefer automobile transport over other modes. As we see below, when controlling for trip duration and income, older commuters are more likely to drive and less likely to walk or bike compared to younger ones.  
+
+```{r age scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+
+mod <- glm ( drove_work ~ AGE+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+mod2 <- glm ( bike_walk_work ~ AGE+TRPDUR+INCOME, data=trips_person_hh, family = binomial)
+
+#Scenario 2: 20 vs 55 years of age
+newdat_gg<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg$INCOME <- 50000
+newdat_gg$AGE <- mean(trips_person_hh$AGE)
+
+newdat_gg_1<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_1)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg_1$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_1$INCOME <- 50000
+newdat_gg_1$AGE <- 25
+
+newdat_gg_2<-data.frame(matrix(ncol = 3, nrow = nrow(trips_person_hh)))
+colnames(newdat_gg_2)<- c("TRPDUR", "INCOME", "AGE")
+newdat_gg_2$TRPDUR <- trips_person_hh$TRPDUR
+newdat_gg_2$INCOME <- 50000
+newdat_gg_2$AGE <- 55
+
+#drove
+pred_dat<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat)<- c("TRPDUR", "Pred_44Years_Inc50K", "Pred_25Years_Inc50K", "Pred_55Years_Inc50K")
+pred_dat$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat$Pred_44Years_Inc50K<- predict(mod, newdat_gg, type="response")
+pred_dat$Pred_25Years_Inc50K<- predict(mod, newdat_gg_1, type="response")
+pred_dat$Pred_55Years_Inc50K<- predict(mod, newdat_gg_2, type="response")
+
+pred_dat2<- data.frame(matrix(ncol = 4, nrow = nrow(trips_person_hh)))
+colnames(pred_dat2)<- c("TRPDUR", "Pred_44Years_Inc50K", "Pred_25Years_Inc50K", "Pred_55Years_Inc50K")
+pred_dat2$TRPDUR<-trips_person_hh$TRPDUR
+pred_dat2$Pred_44Years_Inc50K<- predict(mod2, newdat_gg, type="response")
+pred_dat2$Pred_25Years_Inc50K<- predict(mod2, newdat_gg_1, type="response")
+pred_dat2$Pred_55Years_Inc50K<- predict(mod2, newdat_gg_2, type="response")
+
+dat <- gather(pred_dat, -TRPDUR, key = "Scenario", value = "value")
+dat2 <- gather(pred_dat2, -TRPDUR, key = "Scenario", value = "value")
+
+grid.arrange(
+ggplot(dat, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Drive to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") + plotTheme() ,
+ggplot(dat2, aes(x = TRPDUR, y = value, colour = Scenario)) + 
+        geom_line() + ylim(0,1) +
+  labs(title = "Bike/Walk to Work") +
+        xlab("Trip Duration") + ylab("Predicted Probability") + plotTheme(), ncol = 1, top = "3 Age Scenarios")
+```
+
+  
+Overall, our drive to work model predicts much better than the walk and bike to work model. The drive model has an accuracy rate of 92%, compared to just 6.5% for the walk/bike model. Part of this is likely due to the low number of bike and walk to work trips. In all, there are only 173 observations of either bike or walking trips, compared to 3038 observations of driving trips. Due to these limitations, the bike or walk to work model should not be used for predictive purposes. For future modeling, it would be valuable to explore data sources that feature a higher number of biking and walking trips. 
+
+
+## Multinomial Logit: drive, carpool, transit, walk, or bike to work      
+Now we create a model to predict whether somebody will drive, carpool, ride transit, walk, or bike to work. First, we clean the data and calculate important metrics such as travel time, travel distance, and parking and toll costs for each mode. Driving is the most popular mode by far, with more than 2500 observations. Transit and walking each have less than 200 observations, while biking and carpool each have less than 50.   
+
+```{r drive carpool transit walk or bike, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+trips_person_hh <- trips_person_hh %>%
+  mutate(walk_work = case_when (TRAN1 == 11  ~ 1, TRUE ~ 0),
+         bike_work = case_when(TRAN1 == 14 ~ 1, TRUE ~ 0))
+
+CommuteTripsClean <- trips_person_hh[which(trips$Dest_PTYE == 2), ] 
+
+#combine modes into a single column so that we can plot
+CommuteTripsClean$Commute[CommuteTripsClean$drove_work == 1] <- 1
+CommuteTripsClean$Commute[CommuteTripsClean$carpool_work == 1] <- 2
+CommuteTripsClean$Commute[CommuteTripsClean$transit_work == 1] <- 3
+CommuteTripsClean$Commute[CommuteTripsClean$walk_work == 1] <- 4
+CommuteTripsClean$Commute[CommuteTripsClean$bike_work == 1] <- 5
+
+#are there NAs?
+table(is.na(CommuteTripsClean$Commute))
+table(CommuteTripsClean$Commute)
+
+
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 1] <- "Drive"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 2] <- "Carpool"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 3] <- "Transit"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 4] <- "Walk"
+CommuteTripsClean$hist[CommuteTripsClean$Commute == 5] <- "Bike"
+CommuteTripsClean$hist <- as.factor(CommuteTripsClean$hist)
+#plot frequency of each mode chosen
+ggplot(CommuteTripsClean, aes(x=hist)) +
+  labs(title = "Frequency of each mode choice") +
+  geom_bar()
+
+
+CommuteTripsClean <- subset(CommuteTripsClean, !duplicated(X))
+
+CommuteTripsClean <-CommuteTripsClean %>% filter(!is.na(SAMPN_PER))
+
+#Check for repetition
+##Commute_mode <- CommuteTripsClean%>% select(transit_work, drove_work, bike_work, walk_work,carpool_work)
+##Commute_mode$check<-
+##Commute_mode$transit_work+Commute_mode$drove_work+Commute_mode$bike_work + Commute_mode$walk_work + Commute_mode$carpool_work
+##max(Commute_mode$check)
+
+Biking<-CommuteTripsClean[which(CommuteTripsClean$bike_work ==1),]
+Walking<-CommuteTripsClean[which(CommuteTripsClean$walk_work ==1),]
+Drive<-CommuteTripsClean[which(CommuteTripsClean$drove_work ==1),]
+Transit<-CommuteTripsClean[which(CommuteTripsClean$transit_work ==1),]
+Carpool <- CommuteTripsClean[which(CommuteTripsClean$carpool_work ==1),]
+
+Drive$distance<-(30/60)*Drive$TRPDUR
+Biking$distance<-(12/60)*Biking$TRPDUR
+Walking$distance<-(4/60)*Walking$TRPDUR
+Transit$distance<-(25/60)*Transit$TRPDUR
+Carpool$distance<-(30/60)*Carpool$TRPDUR
+
+dat<-rbind(Biking, Walking, Transit, Carpool, Drive)
+
+dat$time.drove <-dat$distance/30
+dat$time.bike <- dat$distance/12
+dat$time.transit <- dat$distance/25
+dat$time.carpool <- dat$distance/30
+dat$time.walk <- dat$distance/4
+
+dat$mode[dat$bike_work == 1] <- "bike"
+dat$mode[dat$transit_work == 1] <- "transit"
+dat$mode[dat$walk_work == 1] <- "walk"
+dat$mode[dat$drove_work == 1] <- "drove"
+dat$mode[dat$carpool_work == 1] <- "carpool"
+
+dat2 <- dat %>%
+  mutate(with_toll = case_when(TOLLA > 0 ~ 1, TRUE ~ 2),
+         with_park = case_when(PARKC > 0 ~ 1, TRUE ~ 2))
+  
+
+rownames(dat2) <- NULL 
+```
+
+Let's clean the data further to prepare for modelling.  
+
+```{r modelling work, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+dat_final <-
+  dat2 %>%
+  dplyr::select("SAMPN.x", "PERNO.x", "X", "AGE", "INCOME", "SAMPN_PER", "with_toll", "TOLL", "with_park", "PARKU","PARKO" ,"TRPDUR", "drove_work", "transit_work","carpool_work", "GEND", "DISAB", "EDUC", "TOTVEH", "ADVLT", "RENT", "ENGL" , "HHSIZE", "NPHON" , "NOWRK", starts_with("time"),mode)
+
+dat_final[is.na(dat_final)] <- 0
+
+head(dat_final)
+library(mlogit)
+datMNL <- mlogit.data(dat_final, shape="wide", choice="mode", varying=c(26:30))
+
+head(datMNL)
+```
+
+We selected variables that are relevant across all modes (i.e. toll or parking are only related to driving, so we excluded them). Below, we create 3 models to start: a model with only decision maker specific variables, a model with alternative and decision maker specific variables, and a model with only alternative specific variables. The model with both alternative and decision maker variables has the highest McFadden R^2. 
+
+```{r MNL models, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#mod 1
+mod1 <- mlogit (mode ~ 1 | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
+summary(mod1)
+
+#mod 2 with time
+mod2 <-mlogit (mode ~ time | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
+summary(mod2)
+
+#mod 3 only with time
+mod3 <-mlogit (mode ~ time | 1, data = datMNL)
+summary(mod3)
+```
+
+Based on this, we create a more succinct model based on model 2, removing statistically insignificant variables. The list of variables we use includes: INCOME, GEND, EDUC, TOTVEH, NPHON, and HHSIZE. This reduction in variables slightly lowers  the model's McFadden R^2, but it now has a much higher proportion of significant variables. The AIC varies very little between model 2 and model 4 as well. 
+
+```{r var selection MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#mod 4: with time and decisionmaker specific, insignificant variables removed
+mod4 <-mlogit (mode ~ time | INCOME + GEND + EDUC + TOTVEH + NPHON + HHSIZE, data = datMNL)
+summary(mod4)
+
+AIC(mod1, mod2, mod3, mod4)
+```
+
+Using a chi-square test, we further confirm that adding alternative specific variables (time) and eliminating insignificant variables improves model fit. 
+
+```{r chisq test MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+#think back to chisq test we did for binomial
+modelChi <- (-2*(-780.35)) - (-2*(-754.41)) 
+#-754.4 = log likelihood for mod2
+#-780.35 = log likelihood for mod4
+#this is the chisq in output
+
+#calculating change in degree of freedom
+mod4$logLik
+df.mod4 <- 29
+mod2$logLik
+df.mod2 <- 45
+
+chidf <- df.mod4 - df.mod2
+
+#if prob < 0.05, then the final model significantly improves fit
+chisq.prob <- 1 - pchisq(modelChi, chidf)
+chisq.prob #this is the chisq p-value in the output
+```
+
+The results below show the possibilities of choosing any of the 5 modes predicted by our model 4. 
+
+For example, given all the circumstance in observation 1, the possibility of anyone choosing this mode of transportation is 32%.
+
+```{r model summary MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+summary(mod4)
+
+fitted(mod4, outcome = TRUE, 30)   #probability of choosing any of the 4 modes
+```
+
+
+## Conclusion  
+### Model results   
+
+The table below shows the model summary:
+
+```{r mnl mods, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+library(stargazer)
+stargazer(mod2, mod4, type = "text")
+
+```
+
+The model takes mode "biking" as a reference mode. As travel times increases,  people are less likely to take transit, drive, carpool, or walk compare to biking. 
+
+The change in another variables (given as a coefficients) is associated with the change in odd ratio of the specific mode against the odd ratio of biking while keeping other variables constant. 
+
+For example, let's look at "HHSIZE: transit". An unit increase in household size is associated with a 13% decrease in the odds of people taking transit compared to biking. This means, people who have larger houses have higher chance of being bikers than transit users.   
+```{r exp coef mnl, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+100 * (exp(coef(mod4))-1)
+```
+
+## Model performance
+
+According to **Behavioral Travel Modelling**, edited by David Hensher and Peter Stopher in 1979, a R2 between 0.2-0.4 represents an excellent fit. Our model has a great fit with an R2 of 0.39.
+
+Let's now predict the results based on different time. 
+```{r time scenarios, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+str(datMNL)
+
+dtime <- data.frame(time = datMNL$time, GEND=1,INCOME=mean(dat$INCOME), EDUC = 1, TOTVEH = mean(datMNL$TOTVEH), NPHON = mean(datMNL$NPHON), HHSIZE = mean(datMNL$HHSIZE))
+
+pp.time <- cbind(dtime, predict(mod4, newdata = dtime, type = "probs", se = TRUE)) %>%
+  select(time, drove,bike,walk,transit, carpool) 
+
+  pp.time %>%
+  gather(Varible, Value, -time) %>%
+  ggplot(aes(x = time, y = Value, color = Varible)) + geom_line() +  theme_light() + ylab("Probability") + xlab("Travel Time") + labs(title = "Probability of Mode Choice against Travel Time", color = "Mode")
+  
+
+```
+
+The graph above shows that people would always prefer driving regardless of time. When travel time is below 10 minutes, some people prefer walking; but when the travel time is greater than 10 minutes, the rate of walking sharply decreased, lower than the probability of transit, and about the same as biking.
+We can also see that when travel time is beyond 10 minutes, the probably of driving is higher and more consistent.
+
+The model performs the worst on walking, because the variation is just so large among the prediction results with a range between 0.00 - 0.75. This makes sense, because we have few observations on walking, which makes the results more inconsistent. 
+
+## Model limitations   
+
+The model could be improved if we incorporated the estimated cost of each trip by different modes. This is a little difficult to calculate, since the transit cost per mile might vary depending on the distance.  
+
