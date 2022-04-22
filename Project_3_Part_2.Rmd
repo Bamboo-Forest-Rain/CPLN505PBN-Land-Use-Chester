@@ -517,7 +517,9 @@ dat2 <- dat %>%
 
 rownames(dat2) <- NULL 
 ```
+
 Let's clean the data further to prepare for modelling.  
+
 ```{r modelling work, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 dat_final <-
   dat2 %>%
@@ -533,6 +535,7 @@ head(datMNL)
 ```
 
 We selected variables that are relevant across all modes (i.e. toll or parking are only related to driving, so we excluded them). Below, we create 3 models to start: a model with only decision maker specific variables, a model with alternative and decision maker specific variables, and a model with only alternative specific variables. The model with both alternative and decision maker variables has the highest McFadden R^2. 
+
 ```{r MNL models, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #mod 1
 mod1 <- mlogit (mode ~ 1 | AGE + INCOME +GEND + EDUC + TOTVEH + RENT + ADVLT + NPHON +NOWRK + HHSIZE, data = datMNL)
@@ -547,7 +550,8 @@ mod3 <-mlogit (mode ~ time | 1, data = datMNL)
 summary(mod3)
 ```
 
-Based on this, we create a more succinct model based on model 2, removing statistically insignificant variables. The list of variables we use includes: INCOME, GEND, EDUC, TOTVEH, NPHON, and HHSIZE. This reduction in variables slightly lowers  the model's McFadden R^2, but it now has a much higher proportion of significant variables. Comparing the AIC of all 4 models, we see that model 4 has the lowest AIC, meaning it has the best fit. 
+Based on this, we create a more succinct model based on model 2, removing statistically insignificant variables. The list of variables we use includes: INCOME, GEND, EDUC, TOTVEH, NPHON, and HHSIZE. This reduction in variables slightly lowers  the model's McFadden R^2, but it now has a much higher proportion of significant variables. The AIC varies very little between model 2 and model 4 as well. 
+
 ```{r var selection MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #mod 4: with time and decisionmaker specific, insignificant variables removed
 mod4 <-mlogit (mode ~ time | INCOME + GEND + EDUC + TOTVEH + NPHON + HHSIZE, data = datMNL)
@@ -557,6 +561,7 @@ AIC(mod1, mod2, mod3, mod4)
 ```
 
 Using a chi-square test, we further confirm that adding alternative specific variables (time) and eliminating insignificant variables improves model fit. 
+
 ```{r chisq test MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 #think back to chisq test we did for binomial
 modelChi <- (-2*(-780.35)) - (-2*(-754.41)) 
@@ -577,7 +582,11 @@ chisq.prob <- 1 - pchisq(modelChi, chidf)
 chisq.prob #this is the chisq p-value in the output
 ```
 
-```{r model summary MNL,  message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+The results below show the possibilities of choosing any of the 5 modes predicted by our model 4. 
+
+For example, given all the circumstance in observation 1, the possibility of anyone choosing this mode of transportation is 32%.
+
+```{r model summary MNL, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
 summary(mod4)
 
 fitted(mod4, outcome = TRUE, 30)   #probability of choosing any of the 4 modes
@@ -586,5 +595,52 @@ fitted(mod4, outcome = TRUE, 30)   #probability of choosing any of the 4 modes
 
 # Conclusion  
 ## Model results & plots/tables   
+
+The table below shows the model summary. 
+
+```{r}
+library(stargazer)
+stargazer(mod2, mod4, type = "text")
+
+```
+
+The model takes mode "biking" as a reference mode. As travel times increases,  people are less likely to take transit, drive, carpool, or walk compare to biking. 
+
+The change in another variables (given as a coefficients) is associated with the change in odd ratio of the specific mode against the odd ratio of biking while keeping other variables constant. 
+
+
+For example, let's look at "HHSIZE: transit". An unit increase in household size is associated with a 13% decrease in the odds of people taking transit compared to biking. This means, people who have larger houses have higher chance of being bikers than transit users. 
+
+
+```{r, message=FALSE, warning=FALSE, cache=TRUE, include=TRUE}
+100 * (exp(coef(mod4))-1)
+```
+
 ## How well does your model predict observed mode choices? For which modes does it perform best? Worst? How do you know?  
+
+According to **Behavioral Travel Modelling**, edited by David Hensher and Peter Stopher in 1979, a R2 between 0.2-0.4 represents an excellent fit. Our model has a great fit with an R2 of 39.
+
+Let's now predict the results based on different time. 
+```{r}
+str(datMNL)
+
+dtime <- data.frame(time = datMNL$time, GEND=1,INCOME=mean(dat$INCOME), EDUC = 1, TOTVEH = mean(datMNL$TOTVEH), NPHON = mean(datMNL$NPHON), HHSIZE = mean(datMNL$HHSIZE))
+
+pp.time <- cbind(dtime, predict(mod4, newdata = dtime, type = "probs", se = TRUE)) %>%
+  select(time, drove,bike,walk,transit, carpool) 
+
+  pp.time %>%
+  gather(Varible, Value, -time) %>%
+  ggplot(aes(x = time, y = Value, color = Varible)) + geom_line() +  theme_light() + ylab("Probability") + xlab("Travel Time") + labs(title = "Probaility of Mode Choice against Travel Time", color = "Mode")
+  
+
+```
+
+The graph above shows that people would always prefer driving regardless of time. When travel time is below 10 minutes, some people prefer walking; but when the travel time is greater than 10 minutes, the rate of walking sharply decreased, lower than the probability of transit, and about the same as biking.
+We can also see that when travel time is beyond 10 minutes, the probably of driving is higher and more consistent.
+
+The model performs the worst on walking, because the variation is just so large among the prediction results with a range between 0.00 - 0.75. This makes sense, because we have few observations on walking, which makes the results more inconsistent. 
+
 ## Further variables for better future models?
+
+The model could be improved if we incorporated the estimated cost of each trip by different modes. This is a little difficult to calculate, since the transit cost per mile might vary depending on the distance.  
